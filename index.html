@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>더제이수 CEO 자동화 프로그램</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --border-hover: rgba(0,0,0,0.18);
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #aaa;
+      --radius: 14px;
+      --shadow-hover: 0 6px 24px rgba(0,0,0,0.10);
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text-primary);
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+    .header-right { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+    main { max-width: 1040px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+
+    .section { margin-bottom: 2.5rem; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 12px;
+    }
+
+    .btn-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 20px 20px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: default;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.14s;
+      min-height: 90px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.35s ease both;
+    }
+    .btn-card:nth-child(1) { animation-delay: 0.04s; }
+    .btn-card:nth-child(2) { animation-delay: 0.08s; }
+    .btn-card:nth-child(3) { animation-delay: 0.12s; }
+    .btn-card:nth-child(4) { animation-delay: 0.16s; }
+    .btn-card:nth-child(5) { animation-delay: 0.20s; }
+
+    .btn-card.linked { cursor: pointer; }
+    .btn-card.linked:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+    .btn-card.linked:active { transform: scale(0.98); box-shadow: var(--shadow); }
+
+    .btn-card .icon { font-size: 24px; line-height: 1; }
+    .btn-card .label { font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.35; }
+
+    .arrow {
+      position: absolute;
+      right: 16px;
+      top: 18px;
+      font-size: 13px;
+      color: var(--text-muted);
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity 0.16s, transform 0.16s;
+    }
+    .btn-card.linked:hover .arrow { opacity: 1; transform: translateX(0); }
+
+    .btn-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 14px 0 0 14px;
+    }
+    .cat-payroll::before { background: #4a90d9; }
+    .cat-sales::before   { background: #e8825a; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.75rem;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="header-title">더제이수 CEO 자동화 프로그램</span>
+  <span class="header-right" id="clock"></span>
+</header>
+
+<main>
+
+  <div class="section">
+    <div class="section-label">급여 · 매출</div>
+    <div class="grid">
+      <a class="btn-card cat-payroll linked" href="국민은행_대량출금_생성기.html" target="_blank">
+        <span class="icon">🏦</span>
+        <span class="label">급여 은행 대량 엑셀</span>
+        <span class="arrow">→</span>
+      </a>
+      <a class="btn-card cat-sales" href="#" onclick="return false">
+        <span class="icon">📈</span>
+        <span class="label">매출 정리</span>
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </div>
+
+
+</main>
+
+<footer>© 2025 더제이수(THE J'SU) — 내부 자동화 도구</footer>
+
+<script>
+  function updateClock() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('clock').textContent =
+      now.getFullYear() + '.' + pad(now.getMonth()+1) + '.' + pad(now.getDate()) +
+      '  ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+</script>
+
+</body>
+</html>

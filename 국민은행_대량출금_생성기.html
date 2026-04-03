@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>국민은행 대량출금 생성기 · 더제이수</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:14px;line-height:1.6}
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem}
+header{margin-bottom:2rem}
+header h1{font-size:20px;font-weight:600}
+header p{font-size:13px;color:#888;margin-top:4px}
+
+.card{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;color:#aaa;letter-spacing:0.6px;text-transform:uppercase;margin-bottom:1rem}
+
+.hint-box{background:#fafafa;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:11px;color:#888;line-height:1.8}
+.hint-box b{font-weight:600;color:#444}
+.hint-box .point{color:#c47b00;font-weight:500}
+
+.month-row{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.month-row label{font-size:13px;color:#555;font-weight:500;white-space:nowrap}
+.month-select{padding:7px 12px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:13px;font-family:inherit;color:#1a1a1a;cursor:pointer;outline:none}
+.month-select:focus{border-color:#aaa}
+.month-preview{font-size:12px;color:#888}
+.month-preview b{color:#1a6b3a;font-weight:600}
+
+.col-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
+.col-tag{font-size:11px;color:#666;background:#f5f5f3;padding:5px 10px;border-radius:6px;border:0.5px solid #e0e0e0}
+.col-tag b{color:#1a6b3a;font-weight:600}
+.col-tag .gray{color:#aaa}
+
+textarea{width:100%;min-height:200px;font-size:12px;font-family:'Courier New',monospace;border:0.5px solid #ddd;border-radius:8px;padding:12px;background:#fafafa;color:#1a1a1a;resize:vertical;line-height:1.7;outline:none;transition:border-color 0.15s}
+textarea:focus{border-color:#aaa;background:#fff}
+textarea::placeholder{font-family:-apple-system,sans-serif;font-size:12px;color:#ccc;line-height:1.9}
+
+.btn-row{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
+.btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid #ddd;background:transparent;color:#1a1a1a;font-family:inherit;transition:all 0.15s}
+.btn:hover{background:#f0f0f0}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:transparent}
+.btn-primary:hover{background:#333}
+.btn-green{background:#1a6b3a;color:#fff;border-color:transparent;display:inline-flex;align-items:center;gap:6px}
+.btn-green:hover{background:#145530}
+.btn-blue{background:#185FA5;color:#fff;border-color:transparent;display:inline-flex;align-items:center;gap:6px}
+.btn-blue:hover{background:#0f4a82}
+.btn-teal{background:#0F6E56;color:#fff;border-color:transparent;display:inline-flex;align-items:center;gap:6px}
+.btn-teal:hover{background:#085041}
+.btn-ghost{color:#999;border-color:transparent}
+.btn-ghost:hover{background:#f0f0f0;color:#555}
+
+.err-msg{font-size:12px;color:#A32D2D;margin-top:8px;padding:8px 12px;background:#FCEBEB;border-radius:8px;display:none}
+
+.result-section{display:none}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+.stat{background:#f5f5f3;border-radius:8px;padding:12px 14px}
+.stat-label{font-size:11px;color:#aaa;margin-bottom:4px}
+.stat-val{font-size:20px;font-weight:600}
+.stat-sub{font-size:11px;color:#888;margin-top:2px}
+
+.result-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.result-meta{font-size:11px;color:#aaa}
+
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+th{background:#fafafa;color:#888;font-weight:600;padding:8px 10px;text-align:left;border-bottom:0.5px solid #e8e8e8;white-space:nowrap;font-size:11px}
+td{padding:8px 10px;border-bottom:0.5px solid #f0f0f0;color:#1a1a1a;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+.num{text-align:right;font-family:'Courier New',monospace}
+
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
+.badge-full{background:#E6F1FB;color:#185FA5}
+.badge-part{background:#EAF3DE;color:#3B6D11}
+.badge-ok{background:#eaf4ee;color:#1a6b3a}
+.badge-warn{background:#FAEEDA;color:#854F0B}
+
+@media(max-width:600px){
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>국민은행 대량출금 생성기</h1>
+    <p>더제이수 · 급여 이체용</p>
+  </header>
+
+  <div class="card">
+    <div class="card-title">설정</div>
+
+    <div class="month-row">
+      <label>이체 월</label>
+      <select class="month-select" id="month-select" onchange="updateMonthPreview()">
+        <option value="1">1월</option>
+        <option value="2">2월</option>
+        <option value="3">3월</option>
+        <option value="4">4월</option>
+        <option value="5">5월</option>
+        <option value="6">6월</option>
+        <option value="7">7월</option>
+        <option value="8">8월</option>
+        <option value="9">9월</option>
+        <option value="10">10월</option>
+        <option value="11">11월</option>
+        <option value="12">12월</option>
+      </select>
+      <span class="month-preview">F열에 <b id="month-preview-text"></b> 로 입력됩니다</span>
+    </div>
+
+    <div class="col-tags">
+      <div class="col-tag">E열 (통장표시) <b>더제이수 급여</b> 고정</div>
+      <div class="col-tag">F열 (메모) <b id="month-tag"></b></div>
+      <div class="col-tag">G열 (메모2) <span class="gray">공란</span></div>
+    </div>
+
+    <div class="card-title">데이터 붙여넣기</div>
+    <div class="hint-box">
+      <b>엑셀에서 아래 순서대로 복사 후 붙여넣기 (헤더 행 포함해도 됩니다)</b><br>
+      성명 · 월급(초안) · 주민번호 · 월급(확정) · <b>입금할 급여</b> · 정규직유무 · 은행 · 계좌번호<br>
+      <span class="point">✦ "입금할 급여" 열의 금액이 실제 이체금액으로 사용됩니다</span>
+    </div>
+
+    <textarea id="main-input" placeholder="엑셀에서 전체 행 선택 → 복사(Ctrl+C) → 여기에 붙여넣기(Ctrl+V)
+
+예시)
+손수민	837,984	810415-2684020	837,984	796,364	단시간 근로자	농협	3560649206033
+송혜련	-	920331-2095328	3,000,000	2,733,520	정규직	부산	294120045095"></textarea>
+
+    <div id="err-msg" class="err-msg"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="process()">추출하기</button>
+      <button class="btn btn-ghost" onclick="clearAll()">초기화</button>
+    </div>
+  </div>
+
+  <div class="result-section" id="result-section">
+    <div class="card">
+      <div class="card-title">결과</div>
+      <div class="stat-row" id="stat-row"></div>
+
+      <div class="result-top">
+        <span class="result-meta" id="result-meta"></span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-green" onclick="downloadExcel('all')">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1.5A1.5 1.5 0 003.5 13h7A1.5 1.5 0 0012 11.5V10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            전체 다운로드
+          </button>
+          <button class="btn btn-blue" onclick="downloadExcel('full')">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1.5A1.5 1.5 0 003.5 13h7A1.5 1.5 0 0012 11.5V10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            정규직만
+          </button>
+          <button class="btn btn-teal" onclick="downloadExcel('part')">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1.5A1.5 1.5 0 003.5 13h7A1.5 1.5 0 0012 11.5V10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            단시간만
+          </button>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>구분</th>
+              <th>성명</th>
+              <th>A 은행코드</th>
+              <th>B 계좌번호</th>
+              <th class="num">C 이체금액</th>
+              <th>D 예금주</th>
+              <th>E 통장표시</th>
+              <th>F 메모</th>
+              <th>G</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+          <tfoot id="tbl-foot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BANK_MAP = {
+  '국민':4,'kb':4,'004':4,
+  '신한':88,'088':88,
+  '우리':20,'020':20,
+  '하나':81,'keb하나':81,'외환':81,'구외환':81,'081':81,
+  '농협':11,'농협은행':11,'011':11,
+  '기업':3,'ibk':3,'003':3,
+  '씨티':27,'027':27,
+  'sc':23,'스탠다드차타드':23,'제일':23,'023':23,
+  '수협':7,'007':7,
+  '경남':39,'039':39,
+  '광주':34,'034':34,
+  '전북':37,'037':37,
+  '제주':35,'035':35,
+  '부산':32,'032':32,
+  '새마을':45,'새마을금고':45,'045':45,
+  '신협':48,'048':48,
+  '우체국':71,'071':71,
+  '케이뱅크':89,'kbank':89,'089':89,
+  '카카오':90,'카카오뱅크':90,'090':90,
+  '토스':92,'토스뱅크':92,'092':92,
+  '저축':50,'050':50,
+  '산업':2,'002':2,
+  '아이엠':31,'im':31,'031':31,
+};
+
+let savedRows = [];
+
+window.onload = function() {
+  const m = new Date().getMonth() + 1;
+  document.getElementById('month-select').value = String(m);
+  updateMonthPreview();
+};
+
+function updateMonthPreview() {
+  const m = document.getElementById('month-select').value;
+  const text = m + '월 급여';
+  document.getElementById('month-preview-text').textContent = text;
+  document.getElementById('month-tag').textContent = text;
+  if (savedRows.length) renderTable(savedRows);
+}
+
+function getMemoF() {
+  return document.getElementById('month-select').value + '월 급여';
+}
+
+function getBankCode(raw) {
+  if (!raw) return '';
+  let k = String(raw).replace(/\(.*?\)/g,'').trim().toLowerCase().replace(/\s+/g,'').replace(/은행$/,'');
+  if (BANK_MAP[k] !== undefined) return String(BANK_MAP[k]).padStart(3,'0');
+  const num = String(raw).trim().replace(/[^0-9]/g,'');
+  if (num.length >= 2 && num.length <= 3) return num.padStart(3,'0');
+  return String(raw).trim();
+}
+
+function parseAmount(v) {
+  if (!v || String(v).trim() === '-') return 0;
+  return parseInt(String(v).replace(/[^0-9]/g,''), 10) || 0;
+}
+
+function process() {
+  showErr('');
+  const raw = document.getElementById('main-input').value.trim();
+  if (!raw) { showErr('데이터를 붙여넣어 주세요.'); return; }
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const rows = [], warns = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const cells = lines[i].split('\t').map(c => c.trim());
+    if (cells[0] === '성명' || cells[0] === '이름') continue;
+    if (cells.length < 6) { warns.push(`${i+1}행: 열 수 부족 — 건너뜀`); continue; }
+
+    const name = cells[0].replace(/\s+/g,'');
+    let payCol, typeCol, bankCol, acctCol;
+
+    if (cells.length >= 8) {
+      payCol = cells[4]; typeCol = cells[5]; bankCol = cells[6]; acctCol = cells[7];
+    } else if (cells.length === 7) {
+      payCol = cells[4]; typeCol = cells[5]; bankCol = cells[6]; acctCol = '';
+    } else {
+      warns.push(`${i+1}행(${name}): 열 부족 — 건너뜀`); continue;
+    }
+
+    const pay        = parseAmount(payCol);
+    const isFullTime = String(typeCol).includes('정규직') && !String(typeCol).includes('단시간');
+    const bankCode   = getBankCode(bankCol);
+    const acct       = String(acctCol).replace(/-/g,'').trim();
+
+    if (!name) continue;
+    if (!pay)      warns.push(`${name}: 입금할 급여가 0`);
+    if (!bankCode) warns.push(`${name}: 은행 미인식 (${bankCol})`);
+
+    rows.push({ name, pay, isFullTime, bankLabel: String(bankCol).trim(), bankCode, acct });
+  }
+
+  if (!rows.length) { showErr('데이터를 읽지 못했습니다. 엑셀에서 탭 구분으로 복사했는지 확인해 주세요.'); return; }
+  if (warns.length) showErr('⚠ ' + warns.join(' / '));
+
+  savedRows = rows;
+  document.getElementById('result-section').style.display = 'block';
+  renderStats(rows);
+  renderTable(rows);
+  document.getElementById('result-section').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderStats(rows) {
+  const total   = rows.reduce((s,r) => s + r.pay, 0);
+  const fullCnt = rows.filter(r => r.isFullTime).length;
+  const partCnt = rows.length - fullCnt;
+  document.getElementById('stat-row').innerHTML = `
+    <div class="stat"><div class="stat-label">총 인원</div><div class="stat-val">${rows.length}명</div><div class="stat-sub">정규직 ${fullCnt} · 단시간 ${partCnt}</div></div>
+    <div class="stat"><div class="stat-label">총 이체금액</div><div class="stat-val">${total.toLocaleString()}</div><div class="stat-sub">원</div></div>
+    <div class="stat"><div class="stat-label">정규직</div><div class="stat-val">${fullCnt}명</div><div class="stat-sub">${rows.filter(r=>r.isFullTime).reduce((s,r)=>s+r.pay,0).toLocaleString()}원</div></div>
+    <div class="stat"><div class="stat-label">단시간</div><div class="stat-val">${partCnt}명</div><div class="stat-sub">${rows.filter(r=>!r.isFullTime).reduce((s,r)=>s+r.pay,0).toLocaleString()}원</div></div>
+  `;
+}
+
+function renderTable(rows) {
+  const memoF = getMemoF();
+  const total = rows.reduce((s,r) => s + r.pay, 0);
+
+  document.getElementById('result-meta').textContent =
+    `E열: 더제이수 급여 · F열: ${memoF} · G열: 공란`;
+
+  document.getElementById('tbl-body').innerHTML = rows.map((r,i) => `
+    <tr>
+      <td style="color:#ccc">${i+1}</td>
+      <td><span class="badge ${r.isFullTime?'badge-full':'badge-part'}">${r.isFullTime?'정규직':'단시간'}</span></td>
+      <td><b>${r.name}</b></td>
+      <td style="font-family:'Courier New',monospace">${r.bankCode || '<span style="color:#e07a00">미인식</span>'}</td>
+      <td style="font-family:'Courier New',monospace;font-size:11px">${r.acct||'—'}</td>
+      <td class="num"><b>${r.pay.toLocaleString()}</b></td>
+      <td>${r.name}</td>
+      <td style="color:#1a6b3a;font-weight:500">더제이수 급여</td>
+      <td style="color:#888">${memoF}</td>
+      <td style="color:#ddd">—</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('tbl-foot').innerHTML = `
+    <tr style="background:#fafafa">
+      <td colspan="5" style="padding:8px 10px;font-size:12px;color:#aaa;font-weight:600">합계</td>
+      <td class="num" style="font-weight:700;font-size:13px">${total.toLocaleString()}</td>
+      <td colspan="4"></td>
+    </tr>
+  `;
+}
+
+function downloadExcel(type) {
+  if (!savedRows.length) { alert('먼저 추출하기를 실행해 주세요.'); return; }
+
+  let filtered = savedRows;
+  let label = '전체';
+  if (type === 'full') { filtered = savedRows.filter(r => r.isFullTime);  label = '정규직'; }
+  if (type === 'part') { filtered = savedRows.filter(r => !r.isFullTime); label = '단시간'; }
+
+  if (!filtered.length) { alert(`${label} 해당 인원이 없습니다.`); return; }
+
+  const memoF = getMemoF();
+  const wsData = filtered.map(r => [
+    r.bankCode,
+    r.acct,
+    r.pay,
+    r.name,
+    '더제이수 급여',
+    memoF,
+    '',
+  ]);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  ws['!cols'] = [
+    {wch:8},{wch:22},{wch:14},{wch:12},{wch:16},{wch:12},{wch:6}
+  ];
+
+  filtered.forEach((_, i) => {
+    [0,1,3,4,5,6].forEach(c => {
+      const addr = XLSX.utils.encode_cell({r:i, c});
+      if (ws[addr]) { ws[addr].t = 's'; ws[addr].z = '@'; }
+    });
+    const cAddr = XLSX.utils.encode_cell({r:i, c:2});
+    if (ws[cAddr]) { ws[cAddr].t = 'n'; ws[cAddr].z = '#,##0'; }
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, '급여이체');
+
+  const m = document.getElementById('month-select').value;
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `국민은행_급여이체_${m}월_${label}_더제이수_${dateStr}.xlsx`);
+}
+
+function clearAll() {
+  document.getElementById('main-input').value = '';
+  document.getElementById('result-section').style.display = 'none';
+  showErr('');
+  savedRows = [];
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err-msg');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
