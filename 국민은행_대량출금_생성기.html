@@ -73,8 +73,9 @@ tr:hover td{background:#fafafa}
 .badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
 .badge-full{background:#E6F1FB;color:#185FA5}
 .badge-part{background:#EAF3DE;color:#3B6D11}
-.badge-ok{background:#eaf4ee;color:#1a6b3a}
-.badge-warn{background:#FAEEDA;color:#854F0B}
+.badge-free{background:#F5EAF7;color:#7B3FA0}
+.badge-once{background:#FFF3E0;color:#E65100}
+.badge-etc{background:#F0F0F0;color:#888}
 
 @media(max-width:600px){
   .stat-row{grid-template-columns:repeat(2,1fr)}
@@ -155,7 +156,7 @@ tr:hover td{background:#fafafa}
           </button>
           <button class="btn btn-teal" onclick="downloadExcel('part')">
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 10v1.5A1.5 1.5 0 003.5 13h7A1.5 1.5 0 0012 11.5V10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            단시간만
+            비정규직만 (단시간+프리랜서+1회성)
           </button>
         </div>
       </div>
@@ -250,35 +251,84 @@ function process() {
   const raw = document.getElementById('main-input').value.trim();
   if (!raw) { showErr('데이터를 붙여넣어 주세요.'); return; }
 
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  // 타입 키워드 목록
+  const TYPE_KEYWORDS = ['정규직','단시간','프리랜서','1회성','일회성'];
+
+  // 탭으로 분리한 전체 셀 배열로 펼치기 (줄바꿈 무관하게 처리)
+  const allCells = raw
+    .split(/\n/)
+    .map(l => l.split('\t').map(c => c.trim()))
+    .flat()
+    .filter(c => c !== '');
+
+  // 헤더 셀 제거
+  const headerWords = ['성명','이름','월급','주민번호','입금할급여','정규직유무','은행','계좌번호'];
+  const filtered = allCells.filter(c => !headerWords.includes(c.replace(/\s/g,'')));
+
   const rows = [], warns = [];
+  let i = 0;
 
-  for (let i = 0; i < lines.length; i++) {
-    const cells = lines[i].split('\t').map(c => c.trim());
-    if (cells[0] === '성명' || cells[0] === '이름') continue;
-    if (cells.length < 6) { warns.push(`${i+1}행: 열 수 부족 — 건너뜀`); continue; }
+  while (i < filtered.length) {
+    const name = filtered[i];
+    // 이름: 한글 2~5자
+    if (!/^[가-힣]{2,5}$/.test(name)) { i++; continue; }
 
-    const name = cells[0].replace(/\s+/g,'');
-    let payCol, typeCol, bankCol, acctCol;
-
-    if (cells.length >= 8) {
-      payCol = cells[4]; typeCol = cells[5]; bankCol = cells[6]; acctCol = cells[7];
-    } else if (cells.length === 7) {
-      payCol = cells[4]; typeCol = cells[5]; bankCol = cells[6]; acctCol = '';
-    } else {
-      warns.push(`${i+1}행(${name}): 열 부족 — 건너뜀`); continue;
+    // 이름 다음 셀들을 모아서 필드 파싱
+    // 구조: 이름 / 월급초안 / 주민번호 / 월급확정 / 입금할급여 / 구분 / 은행 / 계좌 [/ 추가구분]
+    const chunk = [name];
+    let j = i + 1;
+    // 다음 이름(한글2~5자) 이 나오거나 충분한 셀이 쌓일 때까지
+    while (j < filtered.length && chunk.length < 10) {
+      const next = filtered[j];
+      // 다음 항목이 이름처럼 생겼으면 중단 (단, 은행명/구분 제외)
+      const isBankOrType = TYPE_KEYWORDS.includes(next) ||
+        Object.keys(BANK_MAP).some(k => next.replace(/은행$/,'').toLowerCase() === k) ||
+        /^[가-힣]{2,4}은행$/.test(next) || /^[가-힣]{2,4}뱅크$/.test(next);
+      if (/^[가-힣]{2,5}$/.test(next) && !isBankOrType && chunk.length >= 6) break;
+      chunk.push(next);
+      j++;
     }
+    i = j;
 
-    const pay        = parseAmount(payCol);
-    const isFullTime = String(typeCol).includes('정규직') && !String(typeCol).includes('단시간');
-    const bankCode   = getBankCode(bankCol);
-    const acct       = String(acctCol).replace(/-/g,'').trim();
+    // chunk에서 각 필드 추출
+    // 주민번호 패턴으로 위치 찾기
+    const juminIdx = chunk.findIndex(c => /^\d{6}-?\d{7}$/.test(c));
+    if (juminIdx < 0) { warns.push(`${name}: 주민번호 인식 실패 — 건너뜀`); continue; }
 
-    if (!name) continue;
-    if (!pay)      warns.push(`${name}: 입금할 급여가 0`);
+    // 입금할 급여: 주민번호 이후 숫자 셀들 중 마지막 (확정 후 입금할 급여)
+    const afterJumin = chunk.slice(juminIdx + 1);
+
+    // 타입 키워드 찾기
+    const typeIdx = afterJumin.findIndex(c => TYPE_KEYWORDS.some(k => c.includes(k)));
+    const typeStr = typeIdx >= 0 ? afterJumin[typeIdx] : '';
+
+    // 타입 이전의 숫자 셀들 = 월급확정, 입금할급여
+    const numsBefore = afterJumin.slice(0, typeIdx >= 0 ? typeIdx : afterJumin.length)
+      .filter(c => /^[\d,]+$/.test(c));
+    const payCol = numsBefore[numsBefore.length - 1] || ''; // 마지막 숫자 = 입금할 급여
+
+    // 타입 이후: 은행, 계좌
+    const afterType = typeIdx >= 0 ? afterJumin.slice(typeIdx + 1) : afterJumin;
+    // 은행: 첫 번째 비숫자 셀
+    const bankCol = afterType.find(c => !/^[\d\-]+$/.test(c) && !TYPE_KEYWORDS.includes(c)) || '';
+    // 계좌: 숫자+하이픈으로만 이루어진 셀
+    const acctRaw = afterType.find(c => /^[\d\-]{8,}$/.test(c)) || '';
+
+    let empType = '기타';
+    if (typeStr.includes('정규직') && !typeStr.includes('단시간')) empType = '정규직';
+    else if (typeStr.includes('단시간')) empType = '단시간';
+    else if (typeStr.includes('프리랜서')) empType = '프리랜서';
+    else if (typeStr.includes('1회성') || typeStr.includes('일회성')) empType = '1회성';
+
+    const pay      = parseAmount(payCol);
+    const bankCode = getBankCode(bankCol);
+    const acct     = acctRaw.replace(/-/g,'');
+
+    if (!pay)      warns.push(`${name}: 입금할 급여 인식 실패`);
     if (!bankCode) warns.push(`${name}: 은행 미인식 (${bankCol})`);
+    if (!acct)     warns.push(`${name}: 계좌번호 인식 실패`);
 
-    rows.push({ name, pay, isFullTime, bankLabel: String(bankCol).trim(), bankCode, acct });
+    rows.push({ name, pay, empType, bankLabel: bankCol, bankCode, acct });
   }
 
   if (!rows.length) { showErr('데이터를 읽지 못했습니다. 엑셀에서 탭 구분으로 복사했는지 확인해 주세요.'); return; }
@@ -293,14 +343,35 @@ function process() {
 
 function renderStats(rows) {
   const total   = rows.reduce((s,r) => s + r.pay, 0);
-  const fullCnt = rows.filter(r => r.isFullTime).length;
-  const partCnt = rows.length - fullCnt;
+  const fullCnt = rows.filter(r => r.empType === '정규직').length;
+  const partCnt = rows.filter(r => r.empType === '단시간').length;
+  const freeCnt = rows.filter(r => r.empType === '프리랜서').length;
+  const onceCnt = rows.filter(r => r.empType === '1회성').length;
+  const etcCnt  = rows.filter(r => r.empType === '기타').length;
+  const subArr  = [
+    fullCnt ? `정규직 ${fullCnt}` : '',
+    partCnt ? `단시간 ${partCnt}` : '',
+    freeCnt ? `프리랜서 ${freeCnt}` : '',
+    onceCnt ? `1회성 ${onceCnt}` : '',
+    etcCnt  ? `기타 ${etcCnt}` : '',
+  ].filter(Boolean).join(' · ');
   document.getElementById('stat-row').innerHTML = `
-    <div class="stat"><div class="stat-label">총 인원</div><div class="stat-val">${rows.length}명</div><div class="stat-sub">정규직 ${fullCnt} · 단시간 ${partCnt}</div></div>
+    <div class="stat"><div class="stat-label">총 인원</div><div class="stat-val">${rows.length}명</div><div class="stat-sub">${subArr}</div></div>
     <div class="stat"><div class="stat-label">총 이체금액</div><div class="stat-val">${total.toLocaleString()}</div><div class="stat-sub">원</div></div>
-    <div class="stat"><div class="stat-label">정규직</div><div class="stat-val">${fullCnt}명</div><div class="stat-sub">${rows.filter(r=>r.isFullTime).reduce((s,r)=>s+r.pay,0).toLocaleString()}원</div></div>
-    <div class="stat"><div class="stat-label">단시간</div><div class="stat-val">${partCnt}명</div><div class="stat-sub">${rows.filter(r=>!r.isFullTime).reduce((s,r)=>s+r.pay,0).toLocaleString()}원</div></div>
+    <div class="stat"><div class="stat-label">정규직</div><div class="stat-val">${fullCnt}명</div><div class="stat-sub">${rows.filter(r=>r.empType==='정규직').reduce((s,r)=>s+r.pay,0).toLocaleString()}원</div></div>
+    <div class="stat"><div class="stat-label">단시간+프리랜서+1회성</div><div class="stat-val">${partCnt+freeCnt+onceCnt}명</div><div class="stat-sub">${rows.filter(r=>r.empType!=='정규직').reduce((s,r)=>s+r.pay,0).toLocaleString()}원</div></div>
   `;
+}
+
+function getBadge(type) {
+  const map = {
+    '정규직':  'badge-full',
+    '단시간':  'badge-part',
+    '프리랜서':'badge-free',
+    '1회성':   'badge-once',
+    '기타':    'badge-etc',
+  };
+  return `<span class="badge ${map[type]||'badge-etc'}">${type}</span>`;
 }
 
 function renderTable(rows) {
@@ -313,7 +384,7 @@ function renderTable(rows) {
   document.getElementById('tbl-body').innerHTML = rows.map((r,i) => `
     <tr>
       <td style="color:#ccc">${i+1}</td>
-      <td><span class="badge ${r.isFullTime?'badge-full':'badge-part'}">${r.isFullTime?'정규직':'단시간'}</span></td>
+      <td>${getBadge(r.empType)}</td>
       <td><b>${r.name}</b></td>
       <td style="font-family:'Courier New',monospace">${r.bankCode || '<span style="color:#e07a00">미인식</span>'}</td>
       <td style="font-family:'Courier New',monospace;font-size:11px">${r.acct||'—'}</td>
@@ -339,8 +410,8 @@ function downloadExcel(type) {
 
   let filtered = savedRows;
   let label = '전체';
-  if (type === 'full') { filtered = savedRows.filter(r => r.isFullTime);  label = '정규직'; }
-  if (type === 'part') { filtered = savedRows.filter(r => !r.isFullTime); label = '단시간'; }
+  if (type === 'full') { filtered = savedRows.filter(r => r.empType === '정규직'); label = '정규직'; }
+  if (type === 'part') { filtered = savedRows.filter(r => r.empType !== '정규직'); label = '비정규직'; }
 
   if (!filtered.length) { alert(`${label} 해당 인원이 없습니다.`); return; }
 
