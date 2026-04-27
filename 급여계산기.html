@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>더제이수 급여 계산기</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --navy:#1e2d3d;--navy2:#2e4057;--accent:#4a90d9;--accent2:#e8722a;
+  --bg:#f5f6f8;--card:#fff;--border:#e2e6ea;--text:#1a1f2e;--muted:#6b7280;
+  --green:#27ae60;--red:#e74c3c;--orange:#e67e22;--blue:#2980b9;--purple:#8e44ad;
+  --juhu-ok:#d4f5d4;--juhu-no:#ffd9d9;--tot-bg:#d9e8ff;--excl-bg:#fff8e1;--manual-bg:#e8f4fd;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
+/* 헤더 */
+.hdr{background:var(--navy);padding:13px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);}
+.hdr-logo{font-size:10px;letter-spacing:3px;color:#8ba3bc;font-weight:600;text-transform:uppercase;}
+.hdr-div{width:1px;height:18px;background:#3d5166;}
+.hdr-title{font-size:16px;font-weight:700;color:#fff;}
+.hdr-v{margin-left:auto;background:var(--accent2);color:#fff;font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;}
+/* 래퍼 */
+.wrap{max-width:1700px;margin:0 auto;padding:20px 18px;}
+/* 업로드 */
+.upload-zone{background:var(--card);border:2px dashed var(--border);border-radius:14px;padding:44px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:18px;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:#f0f7ff;}
+.upload-icon{font-size:42px;margin-bottom:8px;}
+.upload-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.upload-sub{font-size:12px;color:var(--muted);}
+.upload-btn{display:inline-block;margin-top:12px;padding:8px 20px;background:var(--navy);color:#fff;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;}
+#fileInput{display:none;}
+/* 카드 */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+.card{background:var(--card);border-radius:10px;padding:14px 16px;border:1px solid var(--border);}
+.card .lbl{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.card .val{font-size:18px;font-weight:700;color:var(--navy);font-family:'DM Mono',monospace;}
+.card .val.ac{color:var(--accent2);}
+.card.dark{background:var(--navy);}
+.card.dark .lbl{color:#8ba3bc;}
+.card.dark .val{color:#fff;}
+/* 결근의심 */
+.absent-box{background:#fff5f5;border:1px solid #fca5a5;border-radius:10px;padding:14px 18px;margin-bottom:14px;}
+.absent-title{font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:10px;}
+.absent-grid{display:flex;flex-direction:column;gap:6px;}
+.absent-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #fca5a5;border-radius:7px;padding:7px 12px;font-size:12px;flex-wrap:wrap;}
+.absent-info{color:#7f1d1d;font-weight:500;flex:1;min-width:180px;}
+.absent-btns{display:flex;gap:5px;}
+.ab-btn{padding:4px 12px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:.15s;}
+.ab-btn.yes{background:#fee2e2;color:#b91c1c;}
+.ab-btn.yes.on{background:#b91c1c;color:#fff;}
+.ab-btn.no{background:#dcfce7;color:#166534;}
+.ab-btn.no.on{background:#166534;color:#fff;}
+.absent-hint{font-size:10px;color:#9ca3af;margin-top:8px;}
+/* 주휴 주차 */
+.juhu-box{background:#f0fff4;border:1px solid #a8d5a8;border-radius:10px;padding:14px 18px;margin-bottom:14px;}
+.juhu-box h4{font-size:12px;font-weight:700;color:#1e5631;margin-bottom:10px;}
+.juhu-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.jchip{background:#fff;border:1px solid #a8d5a8;border-radius:7px;padding:7px 11px;font-size:11px;min-width:180px;}
+.jchip .je{font-weight:700;color:var(--navy);}
+.jchip .jw{color:var(--muted);font-size:10px;margin-top:1px;}
+.jchip .ja{font-family:'DM Mono',monospace;font-weight:700;color:#1e5631;margin-top:3px;}
+.jchip.jno{border-color:#fca5a5;background:#fff5f5;}
+.jchip.jno .ja{color:#b91c1c;}
+/* 버튼 */
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.15s;display:flex;align-items:center;gap:5px;font-family:'Noto Sans KR',sans-serif;}
+.bp{background:var(--navy);color:#fff;}
+.bp:hover{background:var(--navy2);}
+.ba{background:var(--accent2);color:#fff;}
+.ba:hover{background:#d4611a;}
+.bo{background:transparent;color:var(--navy);border:1.5px solid var(--navy);}
+.bo:hover{background:var(--navy);color:#fff;}
+/* 탭 */
+.tabs{display:flex;gap:4px;margin-bottom:14px;}
+.tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);background:transparent;border:none;transition:.15s;}
+.tab.active{background:var(--navy);color:#fff;}
+.tab:hover:not(.active){background:var(--border);color:var(--text);}
+/* 필터 */
+.fbar{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.fbar label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.fsel{padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif;color:var(--text);background:#fff;}
+/* 테이블 */
+.tbl-wrap{background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-bottom:18px;}
+.tbl-hbar{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.tbl-hbar h3{font-size:13px;font-weight:700;color:var(--navy);}
+.tbl-scroll{overflow-x:auto;max-height:82vh;overflow-y:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  background:var(--navy);color:#fff;padding:8px 9px;
+  text-align:center;font-weight:600;font-size:11px;white-space:nowrap;
+  position:sticky;top:0;z-index:10;
+}
+thead th:nth-child(2){text-align:left;}
+tbody tr{border-bottom:1px solid var(--border);}
+tbody td{padding:6px 9px;vertical-align:middle;}
+/* 직원 컬러 */
+.e0{border-left:3px solid #4a90d9!important;}
+.e1{border-left:3px solid #e8722a!important;}
+.e2{border-left:3px solid #27ae60!important;}
+.e3{border-left:3px solid #8e44ad!important;}
+.e4{border-left:3px solid #f39c12!important;}
+.e5{border-left:3px solid #e74c3c!important;}
+.e6{border-left:3px solid #1abc9c!important;}
+.e7{border-left:3px solid #e91e8c!important;}
+.e8{border-left:3px solid #607d8b!important;}
+.e9{border-left:3px solid #795548!important;}
+.nm{font-weight:700;font-size:13px;}
+.dt{font-family:'DM Mono',monospace;color:var(--muted);font-size:11px;text-align:center;}
+.tc{font-family:'DM Mono',monospace;font-size:12px;text-align:center;}
+.tc.orig{color:#aaa;}
+/* 뱃지 */
+.bdg{display:inline-block;padding:2px 7px;border-radius:9px;font-size:10px;font-weight:700;white-space:nowrap;}
+.b12{background:#fde8e6;color:#c0392b;}
+.b10u{background:#fef0e6;color:#d35400;}
+.bstd{background:#e6f3fc;color:#1a6fa0;}
+.b1h{background:#f0e6fc;color:#6c3483;}
+.blate{background:#e6f9ef;color:#1e8449;}
+.b10l{background:#fff3cd;color:#856404;}
+.bnone{background:#f0f0f0;color:#999;}
+.bexcl{background:#fff8e1;color:#e65100;border:1px dashed #e65100;}
+.bman{background:#e8f4fd;color:#1a6fa0;border:1px solid #2980b9;}
+/* 행 */
+.rjy td{background:var(--juhu-ok)!important;}
+.rjn td{background:var(--juhu-no)!important;}
+.rtot td{background:var(--tot-bg)!important;font-weight:700;}
+.rexcl td{background:var(--excl-bg)!important;}
+.rman td{background:var(--manual-bg)!important;}
+.rwk td{background:#f4f6f8!important;font-size:11px;}
+.rsep td{background:#eef0f3!important;height:5px;}
+/* 수정 입력 */
+.einp{font-family:'DM Mono',monospace;font-size:12px;border:1.5px solid var(--accent);border-radius:5px;padding:2px 6px;width:65px;text-align:center;outline:none;}
+.esave{padding:2px 8px;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;background:var(--green);color:#fff;}
+.ecancel{padding:2px 8px;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;background:#ddd;color:#333;}
+.adj-cell:hover{background:rgba(74,144,217,.08)!important;outline:1.5px solid var(--accent);}
+/* 체크박스 */
+.cbox{width:14px;height:14px;cursor:pointer;accent-color:var(--accent2);}
+/* 급여요약 */
+.st thead th{background:var(--navy);color:#fff;padding:9px 13px;}
+.st td,.st th{padding:8px 13px;border:1px solid var(--border);}
+.st .tot-r td{background:var(--navy);color:#fff;font-weight:700;}
+.amt{font-family:'DM Mono',monospace;text-align:right;}
+/* 범례 */
+.legend{display:flex;flex-wrap:wrap;gap:10px;padding:10px 16px;border-top:1px solid var(--border);font-size:11px;}
+.leg-i{display:flex;align-items:center;gap:4px;color:var(--muted);}
+.leg-d{width:8px;height:8px;border-radius:50%;}
+.notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:8px 14px;font-size:11px;color:#92400e;margin-bottom:12px;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-logo">The J.Soo</span>
+  <div class="hdr-div"></div>
+  <span class="hdr-title">급여 계산기</span>
+  <span class="hdr-v">v2.0</span>
+</div>
+
+<div class="wrap">
+  <div class="upload-zone" id="uploadZone">
+    <div class="upload-icon">📂</div>
+    <div class="upload-title">출근 데이터 엑셀 파일을 업로드해주세요</div>
+    <div class="upload-sub">이름, 등록일자, 출근시간, 퇴근시간 컬럼이 포함된 파일</div>
+
+    <!-- 계약직 알바 설정 -->
+    <div style="margin-top:20px;background:#f8f9fb;border:1px solid #e2e6ea;border-radius:10px;padding:16px 20px;text-align:left;max-width:480px;margin-left:auto;margin-right:auto;">
+      <div style="font-size:12px;font-weight:700;color:#1e2d3d;margin-bottom:6px;">👤 계약직 알바 이름 설정</div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:10px;">주 4일 출근 기준 적용 · 12시 고정 · 퇴근 30분 단위 내림</div>
+      <div id="work4InputList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <button onclick="addWork4Input()" style="margin-top:8px;padding:5px 12px;background:#fff;border:1.5px dashed #c0c8d0;border-radius:7px;font-size:11px;color:#6b7280;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">+ 이름 추가</button>
+    </div>
+
+    <label class="upload-btn" for="fileInput" style="margin-top:16px;display:inline-block;">파일 선택</label>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+  </div>
+
+  <div id="resultArea" style="display:none;">
+
+    <!-- 계약직 알바 현황 -->
+    <div id="work4Panel" style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:10px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div style="font-size:12px;font-weight:700;color:#3730a3;">👤 계약직 알바</div>
+      <div id="work4Tags" style="display:flex;gap:6px;flex-wrap:wrap;flex:1;"></div>
+      <button onclick="toggleWork4Edit()" style="padding:5px 12px;background:#fff;border:1px solid #c7d2fe;border-radius:7px;font-size:11px;color:#3730a3;cursor:pointer;font-weight:600;font-family:'Noto Sans KR',sans-serif;" id="work4EditBtn">✏️ 편집</button>
+    </div>
+    <!-- 계약직 편집 패널 (숨김) -->
+    <div id="work4EditPanel" style="display:none;background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:14px 18px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:700;color:#3730a3;margin-bottom:8px;">👤 계약직 알바 이름 편집 <span style="font-size:10px;font-weight:400;color:#6b7280;">— 변경 후 재계산 버튼 클릭</span></div>
+      <div id="work4EditList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <button onclick="addWork4EditInput()" style="margin-top:8px;padding:5px 12px;background:#fff;border:1.5px dashed #c7d2fe;border-radius:7px;font-size:11px;color:#6b7280;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">+ 이름 추가</button>
+    </div>
+
+    <!-- 이용 안내 펼쳐보기 -->
+    <div id="guideBox" style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div onclick="toggleGuide()" style="padding:10px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+        <span style="font-size:12px;color:#92400e;">💡 <b>이용 안내</b> — 출근시간 보정 규칙 및 사용법</span>
+        <span id="guideArrow" style="font-size:12px;color:#92400e;transition:.2s;">▼ 펼쳐보기</span>
+      </div>
+      <div id="guideContent" style="display:none;border-top:1px solid #fcd34d;padding:16px 20px;">
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:16px;">
+
+          <!-- 출근시간 보정 규칙 -->
+          <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e7eb;">
+            <div style="font-size:12px;font-weight:700;color:#1e2d3d;margin-bottom:10px;">⏰ 직원별 출근 보정 규칙</div>
+            <table style="width:100%;border-collapse:collapse;font-size:11px;">
+              <thead>
+                <tr style="background:#f3f4f6;">
+                  <th style="padding:5px 8px;text-align:left;color:#555;font-weight:600;">직원</th>
+                  <th style="padding:5px 8px;text-align:left;color:#555;font-weight:600;">기준시간</th>
+                  <th style="padding:5px 8px;text-align:left;color:#555;font-weight:600;">20분 이상 일찍</th>
+                  <th style="padding:5px 8px;text-align:left;color:#555;font-weight:600;">20분 미만 일찍</th>
+                  <th style="padding:5px 8px;text-align:left;color:#555;font-weight:600;">지각(기준 이후)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-top:1px solid #f0f0f0;">
+                  <td style="padding:5px 8px;font-weight:600;">손수민<br>이수나<br>이수정2<br>임미정</td>
+                  <td style="padding:5px 8px;color:#2980b9;font-weight:700;">10:00</td>
+                  <td style="padding:5px 8px;">10분 올림<br><span style="color:#999;font-size:10px;">예) 09:38 → 09:40</span></td>
+                  <td style="padding:5px 8px;">10:00 고정<br><span style="color:#999;font-size:10px;">예) 09:50 → 10:00</span></td>
+                  <td style="padding:5px 8px;">20분 미만: 그대로<br>20분 이상: 10분 올림<br><span style="color:#999;font-size:10px;">예) 10:05 → 10:05 / 10:25 → 10:30</span></td>
+                </tr>
+                <tr style="border-top:1px solid #f0f0f0;">
+                  <td style="padding:5px 8px;font-weight:600;">이은희</td>
+                  <td style="padding:5px 8px;color:#2980b9;font-weight:700;">11:00</td>
+                  <td style="padding:5px 8px;">10분 올림</td>
+                  <td style="padding:5px 8px;">11:00 고정</td>
+                  <td style="padding:5px 8px;">20분 미만: 그대로<br>20분 이상: 10분 올림</td>
+                </tr>
+                <tr style="border-top:1px solid #f0f0f0;">
+                  <td style="padding:5px 8px;font-weight:600;">이수정</td>
+                  <td style="padding:5px 8px;color:#2980b9;font-weight:700;">14:00</td>
+                  <td style="padding:5px 8px;">10분 올림<br><span style="color:#999;font-size:10px;">예) 13:30 → 13:30</span></td>
+                  <td style="padding:5px 8px;">1시간 올림<br><span style="color:#999;font-size:10px;">예) 13:55 → 14:00</span></td>
+                  <td style="padding:5px 8px;">그대로</td>
+                </tr>
+                <tr style="border-top:1px solid #f0f0f0;">
+                  <td style="padding:5px 8px;font-weight:600;">이혜정<br>윤혜정</td>
+                  <td style="padding:5px 8px;color:#2980b9;font-weight:700;">12:00</td>
+                  <td style="padding:5px 8px;color:#c0392b;font-weight:600;" colspan="3">항상 12:00 고정 (실제 출근시간 무관)</td>
+                </tr>
+                <tr style="border-top:1px solid #f0f0f0;background:#f5f3ff;">
+                  <td style="padding:5px 8px;font-weight:600;color:#6d28d9;">유가경<br>오윤지<br><span style="font-size:10px;background:#ede9fe;color:#6d28d9;border-radius:4px;padding:1px 5px;font-weight:700;">계약직 알바</span></td>
+                  <td style="padding:5px 8px;color:#2980b9;font-weight:700;">12:00</td>
+                  <td style="padding:5px 8px;color:#c0392b;font-weight:600;" colspan="3">
+                    항상 12:00 고정 (실제 출근시간 무관)<br>
+                    <span style="color:#6d28d9;font-size:10px;font-weight:600;">
+                      · 하루 기본 3시간 (±30분 or 1시간 추가 가능)<br>
+                      · 주 15시간 미만으로만 근무 → 주휴수당 미발생<br>
+                      · 퇴근은 30분 단위 내림 · 주 4일 출근 기준
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 퇴근 & 주휴 규칙 -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e7eb;">
+              <div style="font-size:12px;font-weight:700;color:#1e2d3d;margin-bottom:8px;">🚪 퇴근시간 보정</div>
+              <div style="font-size:11px;color:#555;line-height:1.7;">
+                <b style="color:#8e44ad;">유가경 · 오윤지</b> → 30분 단위 내림<br>
+                <span style="color:#999;">예) 15:17 → 15:00 / 15:32 → 15:30</span><br><br>
+                <b>나머지 직원</b> → 초 단위 무시, 분 그대로<br>
+                <span style="color:#999;">예) 14:05:38 → 14:05</span>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e7eb;">
+              <div style="font-size:12px;font-weight:700;color:#1e2d3d;margin-bottom:8px;">📅 주휴수당 지급 조건</div>
+              <div style="font-size:11px;color:#555;line-height:1.7;">
+                ① 해당 주 <b>15시간 이상</b> 근무<br>
+                ② <b style="color:#27ae60;">일반직원</b> — 전체 영업일 <b>개근</b><br>
+                &nbsp;&nbsp;&nbsp;<span style="color:#999;">결근 있으면 주휴 없음</span><br>
+                ③ <b style="color:#6d28d9;">유가경 · 오윤지 (계약직)</b><br>
+                &nbsp;&nbsp;&nbsp;주 15시간 미만 근무 → <span style="color:#b91c1c;font-weight:700;">주휴수당 미발생</span><br>
+                &nbsp;&nbsp;&nbsp;<span style="color:#999;">하루 3시간 × 4일 = 12시간 → 15시간 미충족</span><br><br>
+                주휴수당 = 주간 총 근무시간 ÷ 5 × 시급(10,320원)
+              </div>
+            </div>
+          </div>
+
+          <!-- 사용법 -->
+          <div style="background:#fff;border-radius:8px;padding:14px;border:1px solid #e5e7eb;">
+            <div style="font-size:12px;font-weight:700;color:#1e2d3d;margin-bottom:8px;">🛠️ 사용 방법</div>
+            <div style="font-size:11px;color:#555;line-height:1.8;">
+              <b>1. 출근시간 직접 수정</b><br>
+              &nbsp;&nbsp;→ <span style="background:#e8f4fd;padding:1px 5px;border-radius:3px;color:#1a6fa0;">출근(보정)</span> 셀 클릭 → 시간 입력 → 저장<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#999;">Enter 저장 / Esc 취소</span><br><br>
+              <b>2. 결근 의심 처리</b><br>
+              &nbsp;&nbsp;→ 다른 직원은 출근했는데 해당 직원만 없는 날 자동 감지<br>
+              &nbsp;&nbsp;→ <span style="background:#fee2e2;padding:1px 5px;border-radius:3px;color:#b91c1c;">결근 맞음</span> 선택 시 해당 주 주휴수당 없음<br>
+              &nbsp;&nbsp;→ <span style="background:#dcfce7;padding:1px 5px;border-radius:3px;color:#166534;">아님</span> 선택 시 출근으로 인정, 주휴 정상 계산<br>
+              &nbsp;&nbsp;→ 선택 후 <b>[재계산]</b> 버튼 클릭 필수<br><br>
+              <b>3. 재계산</b><br>
+              &nbsp;&nbsp;→ 결근 처리 변경 후 반드시 <b>[🔄 재계산]</b> 클릭<br>
+              &nbsp;&nbsp;→ 출근시간 수정은 즉시 자동 반영<br><br>
+              <b>4. 다운로드</b><br>
+              &nbsp;&nbsp;→ <span style="color:#e8722a;">📥 엑셀</span> — 상세 근무 내역 + 급여 요약표<br>
+              &nbsp;&nbsp;→ <span style="color:#27ae60;">🖼️ 이미지</span> — 직원별 카톡 전송용 PNG (ZIP)
+            </div>
+          </div>
+
+        </div>
+
+        <div style="font-size:10px;color:#aaa;padding-top:8px;border-top:1px solid #fde68a;">
+          ※ 근무시간은 10분 단위 내림 처리됩니다 (예: 3시간 37분 → 3시간 30분) &nbsp;|&nbsp; 시급: 10,320원
+        </div>
+      </div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <!-- 결근의심 -->
+    <div class="absent-box" id="absentBox" style="display:none;">
+      <div class="absent-title">⚠️ 결근 의심 확인 필요 &nbsp;<span style="font-size:10px;font-weight:400;color:#9ca3af;">결근맞음 선택 시 해당 주 주휴수당 없음 처리</span></div>
+      <div class="absent-grid" id="absentGrid"></div>
+      <div class="absent-hint">※ 확인 후 [재계산] 버튼 클릭 시 반영됩니다</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn bp" onclick="doRecalc()">🔄 재계산</button>
+      <button class="btn ba" onclick="downloadExcel()">📥 엑셀 다운로드</button>
+      <button class="btn btn-green" onclick="downloadAllImages()" style="background:#27ae60;color:#fff;">🖼️ 직원별 이미지 다운로드</button>
+      <button class="btn bo" onclick="resetAll()">↩ 다시 업로드</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('detail',this)">📋 상세 근무 내역</button>
+      <button class="tab" onclick="switchTab('summary',this)">💰 급여 요약표</button>
+    </div>
+
+    <div id="tab-detail">
+      <div class="fbar">
+        <label>직원</label>
+        <select class="fsel" id="fEmp" onchange="renderDetail()"><option value="">전체</option></select>
+        <label>보정내용</label>
+        <select class="fsel" id="fReason" onchange="renderDetail()">
+          <option value="">전체</option>
+          <option value="12시고정">12시 고정</option>
+          <option value="10분올림">10분 올림</option>
+          <option value="기준시간고정">기준시간 고정</option>
+          <option value="1시간올림">1시간 올림</option>
+          <option value="지각(그대로)">지각(그대로)</option>
+          <option value="지각10분올림">지각10분올림</option>
+          <option value="원본">변경없음</option>
+          <option value="excluded">보정제외</option>
+          <option value="manual">수동수정</option>
+        </select>
+        <label>주차</label>
+        <select class="fsel" id="fWeek" onchange="renderDetail()"><option value="">전체</option></select>
+      </div>
+      <div class="tbl-wrap">
+        <div class="tbl-hbar"><h3>상세 근무 내역</h3></div>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr>
+              <th style="text-align:left;min-width:65px;">이름</th>
+              <th>날짜</th>
+              <th>출근(원본)</th>
+              <th title="클릭하면 직접 수정 가능">출근(보정) ✏️</th>
+              <th>보정내용</th>
+              <th>퇴근</th>
+              <th>근무시간</th>
+              <th>급여</th>
+            </tr></thead>
+            <tbody id="detailBody"></tbody>
+          </table>
+        </div>
+        <div class="legend">
+          <div class="leg-i"><div class="leg-d" style="background:var(--juhu-ok);border:1px solid #a8d5a8;"></div>주휴지급</div>
+          <div class="leg-i"><div class="leg-d" style="background:var(--juhu-no);border:1px solid #f5a5a5;"></div>주휴없음</div>
+          <div class="leg-i"><div class="leg-d" style="background:var(--tot-bg);border:1px solid #a5c5f5;"></div>직원총계</div>
+          <div class="leg-i"><div class="leg-d" style="background:var(--manual-bg);border:1px solid #2980b9;"></div>수동수정</div>
+          <div class="leg-i" style="color:#aaa;font-size:10px;">✏️ 출근(보정) 셀 클릭 시 직접 수정 가능</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-summary" style="display:none;">
+
+      <!-- 버튼 2개 가로 배치 -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+
+        <!-- 세무사 카톡 복사 -->
+        <div style="flex:1;min-width:240px;background:#fff5f5;border:1px solid #fca5a5;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#991b1b;margin-bottom:3px;">📨 세무사 카톡 전송용</div>
+            <div style="font-size:11px;color:#b91c1c;">정연님께 보내는 단시간 근로자 급여 내역</div>
+          </div>
+          <button onclick="copyKakaoMsg()" style="background:#fee500;color:#1a1a1a;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;">
+            💬 카톡 복사
+          </button>
+        </div>
+
+        <!-- 급여 관리 시트 복사 -->
+        <div style="flex:1;min-width:240px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:3px;">📊 급여 관리 시트용</div>
+            <div style="font-size:11px;color:#15803d;">지정 순서대로 최종 지급액만 복사</div>
+          </div>
+          <button onclick="copySalarySheet()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap;">
+            📋 시트용 복사
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 미리보기 -->
+      <div id="kakaoPreview" style="display:none;background:#f9f0ff;border:1px solid #d8b4fe;border-radius:10px;padding:14px 18px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:#6b21a8;margin-bottom:8px;" id="previewLabel">📋 복사된 내용 미리보기</div>
+        <pre id="kakaoPreviewText" style="font-size:12px;color:#333;line-height:1.7;white-space:pre-wrap;font-family:'Noto Sans KR',sans-serif;margin:0;"></pre>
+      </div>
+
+      <div class="tbl-wrap">
+        <div class="tbl-hbar"><h3>급여 요약표</h3></div>
+        <div class="tbl-scroll">
+          <table class="st">
+            <thead><tr>
+              <th style="text-align:left;">이름</th>
+              <th>총 근무일수</th><th>총 근무시간</th>
+              <th>주휴수당 합계</th><th>최종 지급액</th>
+            </tr></thead>
+            <tbody id="summaryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RULES={
+  이혜정:{t:'f12'},윤혜정:{t:'f12'},
+  유가경:{t:'f12',co30:true},오윤지:{t:'f12',co30:true},
+  손수민:{t:'std',s:600},이수나:{t:'std',s:600},이수정2:{t:'std',s:600},임미정:{t:'std',s:600},
+  이수정:{t:'s14',s:840},이은희:{t:'s11',s:660},
+};
+// WORK4는 동적 관리 — 계약직 알바 목록
+let WORK4=['오윤지','유가경'];
+const HR=10320;
+
+let rawData=[],pd=[],emps=[];
+let excl=new Set(),manual={},absDec={},noJuhu=new Set();
+let cur=null;
+
+const pHM=t=>{if(!t)return null;const p=String(t).trim().split(':');return p.length<2?null:{h:+p[0],m:+p[1]};};
+const toM=(h,m)=>h*60+m;
+const mStr=n=>{n=Math.max(0,n);return`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;};
+const c10=n=>Math.ceil(n/10)*10;
+const f10=n=>Math.floor(n/10)*10;
+const f30=n=>Math.floor(n/30)*30;
+const c60=n=>Math.ceil(n/60)*60;
+const DOW=['일','월','화','수','목','금','토'];
+const fmt=n=>n.toLocaleString();
+
+function isoWk(ds){
+  const d=new Date(ds);d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const w1=new Date(d.getFullYear(),0,4);
+  return{yr:d.getFullYear(),wk:1+Math.round(((d-w1)/86400000-3+(w1.getDay()+6)%7)/7)};
+}
+
+function adjIn(name,tStr,isExcl,manMin){
+  const hm=pHM(tStr);
+  const raw=hm?toM(hm.h,hm.m):0;
+  if(manMin!=null)return{min:manMin,str:mStr(manMin),reason:'manual'};
+  if(isExcl)return{min:raw,str:mStr(raw),reason:'excluded'};
+  // WORK4(계약직)는 RULES에 없어도 12시 고정 적용
+  if(WORK4.includes(name)&&!RULES[name]){
+    return{min:720,str:'12:00',reason:raw!==720?'12시고정':'원본'};
+  }
+  const r=RULES[name];
+  if(!r)return{min:raw,str:mStr(raw),reason:'원본'};
+  if(r.t==='f12')return{min:720,str:'12:00',reason:raw!==720?'12시고정':'원본'};
+  const s=r.s,diff=s-raw;
+  if(r.t==='std'||r.t==='s11'){
+    if(diff>20){const a=c10(raw);return{min:a,str:mStr(a),reason:'10분올림'};}
+    if(diff>=0)return{min:s,str:mStr(s),reason:'기준시간고정'};
+    if(diff>=-20)return{min:raw,str:mStr(raw),reason:'지각(그대로)'};
+    const a=c10(raw);return{min:a,str:mStr(a),reason:'지각10분올림'};
+  }
+  if(r.t==='s14'){
+    if(diff>20){const a=c10(raw);return{min:a,str:mStr(a),reason:'10분올림'};}
+    if(diff>=0){const a=c60(raw);return{min:a,str:mStr(a),reason:'1시간올림'};}
+    return{min:raw,str:mStr(raw),reason:'지각(그대로)'};
+  }
+  return{min:raw,str:mStr(raw),reason:'원본'};
+}
+
+function adjOut(name,tStr){
+  const hm=pHM(tStr);const raw=hm?toM(hm.h,hm.m):0;
+  const r=RULES[name];
+  // WORK4(계약직)는 30분 단위 내림 적용
+  if((r&&r.co30)||WORK4.includes(name)){const a=f30(raw);return{min:a,str:mStr(a)};}
+  return{min:raw,str:mStr(raw)};
+}
+
+function processAll(){
+  // 결근맞음 → noJuhu / 아님 → 해당 날짜를 출근일로 간주
+  noJuhu.clear();
+  Object.entries(absDec).forEach(([k,v])=>{
+    if(v==='yes'){
+      const[name,date]=k.split('|');
+      const{yr,wk}=isoWk(date);
+      noJuhu.add(`${name}|${yr}|${wk}`);
+    }
+  });
+
+  pd=rawData.map(row=>{
+    const key=`${row.name}|${row.date}`;
+    const ia=adjIn(row.name,row.inTime,excl.has(key),manual[key]);
+    const oa=adjOut(row.name,row.outTime);
+    const hm=pHM(row.inTime),ho=pHM(row.outTime);
+    const rawI=hm?toM(hm.h,hm.m):0,rawO=ho?toM(ho.h,ho.m):0;
+    const wm=Math.max(0,f10(oa.min-ia.min));
+    const{yr,wk}=isoWk(row.date);
+    return{...row,inOrig:mStr(rawI),outOrig:mStr(rawO),inAdj:ia.str,outAdj:oa.str,inMin:ia.min,outMin:oa.min,reason:ia.reason,wm,pay:Math.round(HR*wm/60),yr,wk};
+  });
+
+  // 주차별 영업일
+  const wwd={};
+  pd.forEach(r=>{const k=`${r.yr}|${r.wk}`;if(!wwd[k])wwd[k]=new Set();wwd[k].add(r.date);});
+
+  // 직원별 주차별 출근일 (absDec='no'인 날짜는 출근으로 간주)
+  const ewd={};
+  pd.forEach(r=>{const k=`${r.name}|${r.yr}|${r.wk}`;if(!ewd[k])ewd[k]=new Set();ewd[k].add(r.date);});
+  // '아님' 처리된 날짜 → 출근일로 추가
+  Object.entries(absDec).forEach(([k,v])=>{
+    if(v==='no'){
+      const[name,date]=k.split('|');
+      const{yr,wk}=isoWk(date);
+      const ek=`${name}|${yr}|${wk}`;
+      if(!ewd[ek])ewd[ek]=new Set();
+      ewd[ek].add(date);
+    }
+  });
+
+  // 주휴 판단
+  const ewj={};
+  emps.forEach(emp=>{
+    Object.keys(wwd).forEach(wk=>{
+      const[yr,week]=wk.split('|').map(Number);
+      const ek=`${emp}|${yr}|${week}`;
+      const ed=ewd[ek]||new Set();
+      if(!ed.size||noJuhu.has(ek)){ewj[ek]=false;return;}
+      const wm=pd.filter(r=>r.name===emp&&r.yr===yr&&r.wk===week).reduce((s,r)=>s+r.wm,0);
+      if(wm/60<15){ewj[ek]=false;return;}
+      ewj[ek]=WORK4.includes(emp)?ed.size>=4:[...wwd[wk]].filter(d=>!ed.has(d)).length===0;
+    });
+  });
+
+  // 주휴 주차별
+  const jwk=[];
+  emps.forEach(emp=>{
+    Object.keys(wwd).forEach(wk=>{
+      const[yr,week]=wk.split('|').map(Number);
+      const ek=`${emp}|${yr}|${week}`;
+      const ed=ewd[ek]||new Set();
+      if(!ed.size)return;
+      const wm=pd.filter(r=>r.name===emp&&r.yr===yr&&r.wk===week).reduce((s,r)=>s+r.wm,0);
+      const hj=ewj[ek];
+      jwk.push({emp,yr,wk:week,wm,hj,amt:hj?Math.round(wm/60/5*HR):0,days:ed.size});
+    });
+  });
+
+  // 결근의심
+  const confirmed=new Set(Object.keys(absDec));
+  const sus=[];
+  emps.forEach(emp=>{
+    if(WORK4.includes(emp))return;
+    Object.keys(wwd).forEach(wk=>{
+      const[yr,week]=wk.split('|').map(Number);
+      const ek=`${emp}|${yr}|${week}`;
+      const ed=ewd[ek]||new Set();
+      if(!ed.size)return;
+      [...wwd[wk]].filter(d=>!ed.has(d)).forEach(day=>{
+        const dkey=`${emp}|${day}`;
+        if(!confirmed.has(dkey))sus.push({emp,day,yr,week,total:wwd[wk].size,present:ed.size,key:dkey});
+      });
+    });
+  });
+
+  // 급여
+  const esal={};
+  emps.forEach(emp=>{
+    const rows=pd.filter(r=>r.name===emp);
+    let juhu=0;jwk.filter(j=>j.emp===emp&&j.hj).forEach(j=>juhu+=j.amt);
+    const pay=rows.reduce((s,r)=>s+r.pay,0);
+    esal[emp]={days:rows.length,tm:rows.reduce((s,r)=>s+r.wm,0),juhu,total:pay+juhu};
+  });
+
+  return{wwd,ewd,ewj,sus,jwk,esal};
+}
+
+// ─── 계약직 알바 관리 ───
+
+// 업로드 전 입력란 초기화
+function initWork4Inputs(){
+  const list=document.getElementById('work4InputList');
+  list.innerHTML='';
+  WORK4.forEach(name=>addWork4Input(name));
+  if(!WORK4.length) addWork4Input();
+}
+
+function addWork4Input(val=''){
+  const list=document.getElementById('work4InputList');
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;align-items:center;';
+  div.innerHTML=`
+    <input type="text" value="${val}" placeholder="예) 홍길동"
+      style="flex:1;padding:6px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"
+      class="work4-input">
+    <button onclick="this.parentElement.remove()"
+      style="padding:4px 8px;border:none;border-radius:6px;background:#fee2e2;color:#b91c1c;font-size:11px;cursor:pointer;">✕</button>
+  `;
+  list.appendChild(div);
+}
+
+function getWork4FromInputs(){
+  return [...document.querySelectorAll('.work4-input')]
+    .map(i=>i.value.trim()).filter(v=>v);
+}
+
+// 결과 화면 편집 패널
+function addWork4EditInput(val=''){
+  const list=document.getElementById('work4EditList');
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;align-items:center;';
+  div.innerHTML=`
+    <input type="text" value="${val}" placeholder="예) 홍길동"
+      style="flex:1;padding:6px 10px;border:1px solid #c7d2fe;border-radius:7px;font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;"
+      class="work4-edit-input">
+    <button onclick="this.parentElement.remove()"
+      style="padding:4px 8px;border:none;border-radius:6px;background:#fee2e2;color:#b91c1c;font-size:11px;cursor:pointer;">✕</button>
+  `;
+  list.appendChild(div);
+}
+
+function toggleWork4Edit(){
+  const panel=document.getElementById('work4EditPanel');
+  const btn=document.getElementById('work4EditBtn');
+  const isOpen=panel.style.display!=='none';
+  if(isOpen){
+    // 저장
+    WORK4=[...document.querySelectorAll('.work4-edit-input')]
+      .map(i=>i.value.trim()).filter(v=>v);
+    panel.style.display='none';
+    btn.textContent='✏️ 편집';
+    renderWork4Tags();
+    if(cur){cur=processAll();renderCards(cur);renderAbsent(cur.sus);renderDetail();renderSummary(cur.esal);}
+  } else {
+    // 편집 열기
+    const list=document.getElementById('work4EditList');
+    list.innerHTML='';
+    WORK4.forEach(n=>addWork4EditInput(n));
+    if(!WORK4.length) addWork4EditInput();
+    panel.style.display='block';
+    btn.textContent='✅ 저장';
+  }
+}
+
+function renderWork4Tags(){
+  const tags=document.getElementById('work4Tags');
+  if(!WORK4.length){
+    tags.innerHTML='<span style="font-size:11px;color:#9ca3af;">없음 (편집 버튼으로 추가)</span>';
+    return;
+  }
+  tags.innerHTML=WORK4.map(n=>`
+    <span style="background:#e0e7ff;color:#3730a3;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;">${n}</span>
+  `).join('');
+}
+
+// 공통 복사 헬퍼
+function doCopy(text, previewLabel){
+  const doShow=()=>{
+    document.getElementById('previewLabel').textContent=previewLabel||'📋 복사된 내용 미리보기';
+    document.getElementById('kakaoPreviewText').textContent=text;
+    document.getElementById('kakaoPreview').style.display='block';
+    showPopup('✅ 복사 완료!','클립보드에 복사됐어요. 붙여넣기 하세요! (Ctrl+V / Cmd+V)');
+  };
+  navigator.clipboard.writeText(text).then(doShow).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.cssText='position:fixed;top:-9999px;';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);doShow();
+  });
+}
+
+function copyKakaoMsg(){
+  if(!cur){alert('데이터를 먼저 업로드해주세요.');return;}
+  const{esal}=cur;
+  const month=pd[0]?.date?.slice(0,7)||'';
+  const[yr,mo]=month.split('-');
+  let msg=`안녕하세요 정연님! 단시간 근로자 급여내역입니다.\n\n`;
+  msg+=`📅 ${yr}년 ${parseInt(mo)}월\n`;
+  msg+=`─────────────────\n`;
+  emps.forEach(emp=>{
+    const v=esal[emp]||{};
+    msg+=`${emp}  ${(v.total||0).toLocaleString()}원\n`;
+  });
+  msg+=`─────────────────\n`;
+  const tot=Object.values(esal).reduce((s,v)=>s+v.total,0);
+  msg+=`합계  ${tot.toLocaleString()}원`;
+  doCopy(msg,'💬 카톡 내용 미리보기');
+}
+
+// 지정 순서 — 급여 관리 시트 붙여넣기용
+const SALARY_ORDER=['손수민','이수나','임미정','이수정','이수정2','이은희','이혜정','윤혜정','유가경','오윤지'];
+
+function copySalarySheet(){
+  if(!cur){alert('데이터를 먼저 업로드해주세요.');return;}
+  const{esal}=cur;
+
+  // 지정 순서대로 — 해당 월 데이터 있는 직원만
+  const lines=SALARY_ORDER
+    .filter(emp=>esal[emp])
+    .map(emp=>(esal[emp]?.total||0).toLocaleString());
+
+  const text=lines.join('\n');
+  doCopy(text,'📊 급여 관리 시트용 미리보기 (지정 순서)');
+}
+
+function toggleGuide(){
+  const content=document.getElementById('guideContent');
+  const arrow=document.getElementById('guideArrow');
+  const isOpen=content.style.display!=='none';
+  content.style.display=isOpen?'none':'block';
+  arrow.textContent=isOpen?'▼ 펼쳐보기':'▲ 닫기';
+}
+
+function showPopup(title,msg){
+  let ov=document.getElementById('popupOv');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='popupOv';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML=`<div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:360px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.2);text-align:center;">
+      <div id="pIcon" style="font-size:36px;margin-bottom:10px;"></div>
+      <div id="pTitle" style="font-size:16px;font-weight:700;color:#1e2d3d;margin-bottom:8px;"></div>
+      <div id="pMsg" style="font-size:13px;color:#6b7280;margin-bottom:20px;line-height:1.5;"></div>
+      <button onclick="document.getElementById('popupOv').style.display='none'"
+        style="background:#1e2d3d;color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">확인</button>
+    </div>`;
+    document.body.appendChild(ov);
+  }
+  document.getElementById('pTitle').textContent=title;
+  document.getElementById('pMsg').textContent=msg;
+  ov.style.display='flex';
+}
+
+// 최초 로드용 - 팝업 없음
+function initRender(){
+  cur=processAll();
+  renderCards(cur);
+  renderAbsent(cur.sus);
+  renderDetail();
+  renderSummary(cur.esal);
+}
+
+function doRecalc(){
+  cur=processAll();
+  renderCards(cur);
+  renderAbsent(cur.sus);
+  renderDetail();
+  renderSummary(cur.esal);
+  showPopup('✅ 재계산 완료!','급여 및 주휴수당이 최신 설정으로 반영되었습니다.');
+}
+
+function renderCards({esal,sus}){
+  const tot=Object.values(esal).reduce((s,v)=>s+v.total,0);
+  const totJ=Object.values(esal).reduce((s,v)=>s+v.juhu,0);
+  const totM=Object.values(esal).reduce((s,v)=>s+v.tm,0);
+  const h=Math.floor(totM/60),m=totM%60;
+  document.getElementById('cards').innerHTML=`
+    <div class="card dark"><div class="lbl">전체 지급액</div><div class="val">${fmt(tot)}원</div></div>
+    <div class="card"><div class="lbl">직원수</div><div class="val">${emps.length}명</div></div>
+    <div class="card"><div class="lbl">총 근무시간</div><div class="val">${h}h ${m}m</div></div>
+    <div class="card"><div class="lbl">주휴수당 합계</div><div class="val ac">${fmt(totJ)}원</div></div>
+    <div class="card"><div class="lbl">결근의심</div><div class="val" style="color:${sus.length?'#e74c3c':'#27ae60'}">${sus.length}건</div></div>
+    <div class="card"><div class="lbl">보정제외</div><div class="val" style="color:${excl.size?'#e67e22':'#999'}">${excl.size}건</div></div>
+    <div class="card"><div class="lbl">수동수정</div><div class="val" style="color:${Object.keys(manual).length?'#2980b9':'#999'}">${Object.keys(manual).length}건</div></div>
+  `;
+}
+
+function renderAbsent(sus){
+  const box=document.getElementById('absentBox');
+  const allKeys=new Set([...sus.map(s=>s.key),...Object.keys(absDec)]);
+  if(!allKeys.size){box.style.display='none';return;}
+  box.style.display='block';
+
+  // sus 항목을 key로 맵핑
+  const susMap={};
+  sus.forEach(s=>susMap[s.key]=s);
+
+  // absDec에 있지만 sus에 없는 항목도 추가 (재계산 후 sus에서 빠진 confirmed 항목)
+  const confirmedOnly=Object.keys(absDec).filter(k=>!susMap[k]).map(k=>{
+    const[name,date]=k.split('|');
+    const{yr,wk}=isoWk(date);
+    return{emp:name,day:date,yr,week:wk,total:'?',present:'?',key:k};
+  });
+
+  const allItems=[...sus,...confirmedOnly];
+
+  document.getElementById('absentGrid').innerHTML=allItems.map(s=>{
+    const d=absDec[s.key]||'';
+    const dow=DOW[new Date(s.day).getDay()];
+    const wkNum=s.week||s.wk||'?';  // sus는 week, confirmed는 wk
+    const isConfirmed=!!absDec[s.key];
+    return`<div class="absent-item" style="${isConfirmed?'opacity:.85;':''}">
+      <span class="absent-info">
+        ${isConfirmed?`<span style="font-size:10px;background:${d==='yes'?'#fee2e2':'#dcfce7'};color:${d==='yes'?'#b91c1c':'#166534'};border-radius:4px;padding:1px 6px;margin-right:5px;">${d==='yes'?'결근확정':'출근기록없음'}</span>`:''}
+        ${s.emp} &nbsp;${s.day.slice(5)}(${dow}) &nbsp;${wkNum}주차
+        ${s.present!=='?'?` &nbsp;출근 ${s.present}/${s.total}일`:''}
+      </span>
+      <div class="absent-btns">
+        <button class="ab-btn yes ${d==='yes'?'on':''}" onclick="setAbs('${s.key}','yes')">결근 맞음</button>
+        <button class="ab-btn no ${d==='no'?'on':''}" onclick="setAbs('${s.key}','no')">아님</button>
+        ${isConfirmed?`<button onclick="clearAbs('${s.key}')" style="padding:4px 8px;border:none;border-radius:6px;font-size:10px;cursor:pointer;background:#f3f4f6;color:#6b7280;">초기화</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setAbs(key,val){
+  // 같은 버튼 다시 누르면 토글
+  if(absDec[key]===val) absDec[key]='';
+  else absDec[key]=val;
+  // 자동 재계산 없음 - 수동으로 재계산 버튼 눌러야 반영
+  // 버튼 UI만 업데이트
+  if(cur) renderAbsent(cur.sus);
+}
+function clearAbs(key){
+  delete absDec[key];
+  if(cur) renderAbsent(cur.sus);
+}
+
+
+
+
+const BMAP={
+  '12시고정':['b12','12시 고정'],'10분올림':['b10u','10분 올림'],
+  '기준시간고정':['bstd','기준시간 고정'],'1시간올림':['b1h','1시간 올림'],
+  '지각(그대로)':['blate','지각(그대로)'],'지각10분올림':['b10l','지각10분올림'],
+  '원본':['bnone','변경없음'],'excluded':['bexcl','보정제외 ✓'],'manual':['bman','수동수정 ✏️'],
+};
+const RCOL={'12시고정':'#c0392b','10분올림':'#d35400','기준시간고정':'#1a6fa0','1시간올림':'#6c3483','지각(그대로)':'#1e8449','지각10분올림':'#856404','원본':'#bbb','excluded':'#e65100','manual':'#2980b9'};
+
+function renderDetail(){
+  if(!cur)return;
+  const{ewj,esal,jwk}=cur;
+  const fE=document.getElementById('fEmp').value;
+  const fR=document.getElementById('fReason').value;
+  const fW=document.getElementById('fWeek').value;
+  const tb=document.getElementById('detailBody');
+  tb.innerHTML='';
+  const ei={};emps.forEach((e,i)=>ei[e]=i%10);
+  const tEmps=fE?[fE]:emps;
+
+  tEmps.forEach(emp=>{
+    const eRows=pd.filter(r=>r.name===emp);
+    if(!eRows.length)return;
+    const wg={};
+    eRows.forEach(r=>{const k=`${r.yr}|${r.wk}`;if(!wg[k])wg[k]=[];wg[k].push(r);});
+    let hasVis=false;
+
+    Object.keys(wg).sort().forEach(wkKey=>{
+      if(fW&&wkKey!==fW)return;
+      const[yr,week]=wkKey.split('|').map(Number);
+      const ek=`${emp}|${yr}|${week}`;
+      const hj=ewj[ek];
+      const ji=jwk.find(j=>j.emp===emp&&j.yr===yr&&j.wk===week);
+      const wRows=wg[wkKey];
+      const visRows=fR?wRows.filter(r=>r.reason===fR):wRows;
+      if(!visRows.length&&fR)return;
+      hasVis=true;
+
+      visRows.forEach((row,li)=>{
+        const key=`${row.name}|${row.date}`;
+        const isM=manual[key]!=null;
+        const[bc,bt]=BMAP[row.reason]||['bnone',row.reason];
+        const ac=RCOL[row.reason]||'#bbb';
+        const isChg=!['원본','지각(그대로)'].includes(row.reason);
+        const dow=DOW[new Date(row.date).getDay()];
+        let cls=`e${ei[emp]}`;
+        if(isM)cls+=' rman';
+
+        const tr=document.createElement('tr');
+        tr.className=cls;
+
+        // 출근(보정) 셀 - 클릭하면 인라인 편집
+        const inAdjCell=`<td class="tc adj-cell" id="adjcell_${key.replace(/\|/g,'_')}"
+          style="color:${ac};font-weight:${isChg?700:400};cursor:pointer;position:relative;"
+          onclick="inlineEditIn('${key}','${row.inAdj}')"
+          title="클릭해서 수정">
+          ${row.inAdj}${isM?'<span style="font-size:9px;color:#2980b9;margin-left:3px;">✏️</span>':'<span style="font-size:9px;color:#ccc;margin-left:3px;">✎</span>'}
+        </td>`;
+
+        tr.innerHTML=`
+          <td class="nm">${li===0?row.name:''}</td>
+          <td class="dt">${row.date.slice(5)}(${dow})</td>
+          <td class="tc orig">${row.inOrig}</td>
+          ${inAdjCell}
+          <td><span class="bdg ${bc}">${bt}</span></td>
+          <td class="tc">${row.outAdj}</td>
+          <td class="tc" style="font-weight:700;">${Math.floor(row.wm/60)}:${String(row.wm%60).padStart(2,'0')}<span style="color:#aaa;font-size:10px;margin-left:3px;">(${row.wm}분)</span></td>
+          <td class="tc" style="text-align:right;">${fmt(row.pay)}원</td>
+        `;
+        tb.appendChild(tr);
+      });
+
+      const wtot=wRows.reduce((s,r)=>s+r.wm,0);
+      const wpay=wRows.reduce((s,r)=>s+r.pay,0);
+
+      // 주휴 정보 행 (별도 배경색)
+      // 컬럼: 이름(1) 날짜(2) 출근원본(3) 출근보정(4) 보정내용(5) 퇴근(6) 근무시간(7) 급여(8)
+      const trJ=document.createElement('tr');
+      trJ.style.cssText=`background:${hj?'#c8edd4':'#f5c6c6'}!important;`;
+      trJ.innerHTML=`
+        <td colspan="4" style="text-align:right;padding:4px 10px;font-weight:700;font-size:11px;color:${hj?'#155724':'#7b1a1a'};">
+          ${yr}년 ${week}주차 &nbsp;—&nbsp; ${hj?'주휴 ✓':'주휴없음'}
+        </td>
+        <td></td>
+        <td></td>
+        <td class="tc" style="font-weight:700;font-size:11px;color:${hj?'#155724':'#7b1a1a'};">
+          ${wRows.length}일 · ${Math.floor(wtot/60)}h${wtot%60}m
+        </td>
+        <td class="tc" style="text-align:right;font-weight:700;font-size:12px;color:${hj?'#155724':'#7b1a1a'};">
+          ${hj?'+'+fmt(ji?.amt||0)+'원':'0원'}
+        </td>
+      `;
+      tb.appendChild(trJ);
+
+      // 주차 소계 행 (급여 합계)
+      const trS=document.createElement('tr');
+      trS.className=hj?'rjy':'rjn';
+      trS.innerHTML=`
+        <td colspan="6" style="padding:4px 12px;font-size:11px;"></td>
+        <td class="tc" style="font-weight:700;">${Math.floor(wtot/60)}:${String(wtot%60).padStart(2,'0')}</td>
+        <td class="tc" style="text-align:right;font-weight:700;">${fmt(wpay+(hj?ji?.amt||0:0))}원</td>
+      `;
+      tb.appendChild(trS);
+    });
+
+    if(!hasVis)return;
+
+    const sal=esal[emp]||{};
+    const h=Math.floor((sal.tm||0)/60),m=(sal.tm||0)%60;
+    const trT=document.createElement('tr');
+    trT.className='rtot';
+    trT.innerHTML=`
+      <td class="nm">${emp}</td>
+      <td style="font-size:11px;color:#555;">${sal.days}일 / ${h}h${m}m</td>
+      <td colspan="3" style="text-align:right;font-size:11px;">주휴: ${fmt(sal.juhu||0)}원</td>
+      <td></td>
+      <td colspan="2" style="text-align:right;font-size:15px;font-weight:700;color:var(--navy);font-family:'DM Mono',monospace;">${fmt(sal.total||0)}원</td>
+    `;
+    tb.appendChild(trT);
+    const trSep=document.createElement('tr');
+    trSep.className='rsep';
+    trSep.innerHTML='<td colspan="8"></td>';
+    tb.appendChild(trSep);
+  });
+}
+
+function inlineEditIn(key,curVal){
+  const cellId=`adjcell_${key.replace(/\|/g,'_')}`;
+  const td=document.getElementById(cellId);
+  if(!td)return;
+  // 이미 편집 중이면 무시
+  if(td.querySelector('.einp')) return;
+  const sk=key.replace(/\|/g,'_');
+  td.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:3px;align-items:center;padding:2px;" onclick="event.stopPropagation()">
+      <input class="einp" id="ei_${sk}" type="text" value="${curVal}" placeholder="HH:MM"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();saveEI('${key}','${sk}','${curVal}');}if(event.key==='Escape'){event.preventDefault();cancelEI('${key}','${curVal}');}">
+      <div style="display:flex;gap:3px;">
+        <button class="esave" onclick="event.stopPropagation();saveEI('${key}','${sk}','${curVal}')">저장</button>
+        <button class="ecancel" onclick="event.stopPropagation();cancelEI('${key}','${curVal}')">취소</button>
+      </div>
+    </div>`;
+  setTimeout(()=>{const i=document.getElementById(`ei_${sk}`);if(i){i.focus();i.select();}},50);
+}
+
+function saveEI(key,sk,origVal){
+  const inp=document.getElementById(`ei_${sk}`);
+  if(!inp)return;
+  const hm=pHM(inp.value);
+  if(!hm){alert('시간 형식 오류 (HH:MM)');return;}
+  manual[key]=toM(hm.h,hm.m);
+  const newVal=mStr(manual[key]);
+  // 셀을 바로 닫고 저장된 값 표시 (초기화 버튼 없음)
+  const cellId=`adjcell_${key.replace(/\|/g,'_')}`;
+  const td=document.getElementById(cellId);
+  if(td){
+    td.innerHTML=`${newVal}<span style="font-size:9px;color:#2980b9;margin-left:3px;">✏️</span>`;
+  }
+  // 재계산
+  if(cur){cur=processAll();renderCards(cur);renderDetail();renderSummary(cur.esal);}
+}
+
+function cancelEI(key,origVal){
+  // 셀을 원래대로 복원 (재계산 없음)
+  const cellId=`adjcell_${key.replace(/\|/g,'_')}`;
+  const td=document.getElementById(cellId);
+  if(!td)return;
+  const isM=manual[key]!=null;
+  const ac=td.style.color||'#bbb';
+  td.innerHTML=`${origVal}${isM?'<span style="font-size:9px;color:#2980b9;margin-left:3px;">✏️</span>':'<span style="font-size:9px;color:#ccc;margin-left:3px;">✎</span>'}`;
+}
+
+function delEI(key){
+  delete manual[key];
+  if(cur){cur=processAll();renderCards(cur);renderDetail();renderSummary(cur.esal);}
+}
+
+
+function renderSummary(esal){
+  let tD=0,tM=0,tJ=0,tT=0;
+  document.getElementById('summaryBody').innerHTML=emps.map(emp=>{
+    const v=esal[emp]||{};
+    const h=Math.floor((v.tm||0)/60),m=(v.tm||0)%60;
+    tD+=v.days||0;tM+=v.tm||0;tJ+=v.juhu||0;tT+=v.total||0;
+    return`<tr><td style="font-weight:600;">${emp}</td><td style="text-align:center;">${v.days||0}일</td><td style="text-align:center;">${h}시간 ${m}분</td><td class="amt">${fmt(v.juhu||0)}원</td><td class="amt" style="font-weight:700;">${fmt(v.total||0)}원</td></tr>`;
+  }).join('')+`<tr class="tot-r"><td>합 계</td><td style="text-align:center;">${tD}일</td><td style="text-align:center;">${Math.floor(tM/60)}시간 ${tM%60}분</td><td class="amt">${fmt(tJ)}원</td><td class="amt">${fmt(tT)}원</td></tr>`;
+}
+
+function switchTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-detail').style.display=tab==='detail'?'block':'none';
+  document.getElementById('tab-summary').style.display=tab==='summary'?'block':'none';
+}
+
+function loadFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const json=XLSX.utils.sheet_to_json(ws,{header:1});
+    const hdrs=json[0].map(h=>String(h).trim());
+    const ni=hdrs.findIndex(h=>h.includes('이름'));
+    const di=hdrs.findIndex(h=>h.includes('등록일자')||h.includes('날짜'));
+    const ii=hdrs.findIndex(h=>h.includes('출근'));
+    const oi=hdrs.findIndex(h=>h.includes('퇴근'));
+    rawData=[];
+    json.slice(1).forEach(row=>{
+      const name=row[ni];
+      if(!name||!String(name).trim())return;
+      let date=row[di];
+      if(typeof date==='number'){
+        const d=new Date(Math.round((date-25569)*864e5));
+        date=d.toISOString().slice(0,10);
+      }else date=String(date).trim().slice(0,10);
+      rawData.push({name:String(name).trim(),date,inTime:row[ii]?String(row[ii]).trim():'',outTime:row[oi]?String(row[oi]).trim():''});
+    });
+    emps=[...new Set(rawData.map(r=>r.name))];
+    excl.clear();manual={};absDec={};noJuhu.clear();
+
+    // 업로드 전 입력된 계약직 목록 가져오기
+    const inputWork4=getWork4FromInputs();
+    if(inputWork4.length) WORK4=inputWork4;
+
+    // 계약직 중 데이터에 없는 이름 필터
+    WORK4=WORK4.filter(n=>emps.includes(n));
+
+    // 계약직 태그 렌더링
+    renderWork4Tags();
+    // 편집 패널 초기화
+    const editList=document.getElementById('work4EditList');
+    editList.innerHTML='';
+    WORK4.forEach(n=>addWork4EditInput(n));
+
+    const fE=document.getElementById('fEmp');
+    fE.innerHTML='<option value="">전체</option>'+emps.map(e=>`<option value="${e}">${e}</option>`).join('');
+    const wkSet=new Set();
+    rawData.forEach(r=>{const{yr,wk}=isoWk(r.date);wkSet.add(`${yr}|${wk}`);});
+    const fW=document.getElementById('fWeek');
+    fW.innerHTML='<option value="">전체</option>'+[...wkSet].sort().map(w=>{
+      const[yr,wk]=w.split('|');return`<option value="${w}">${yr}년 ${wk}주차</option>`;
+    }).join('');
+
+    document.getElementById('uploadZone').style.display='none';
+    document.getElementById('resultArea').style.display='block';
+    initRender();  // 최초 로드 시 팝업 없이 렌더링
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function downloadExcel(){
+  if(!cur)return;
+  // 다운로드 전 최신 계산 결과 반영
+  cur=processAll();
+  const{ewj,esal,jwk}=cur;
+  const RLBL={'12시고정':'12시 고정','10분올림':'10분 올림','기준시간고정':'기준시간 고정','1시간올림':'1시간 올림','지각(그대로)':'지각(그대로)','지각10분올림':'지각10분올림','원본':'변경없음','excluded':'보정제외','manual':'수동수정'};
+  const wb2=XLSX.utils.book_new();
+  const dR=[['이름','등록일자','보정내용','출근(원본)','출근(보정)','퇴근','근무시간','급여']];
+  emps.forEach(emp=>{
+    const er=pd.filter(r=>r.name===emp);
+    const wg={};er.forEach(r=>{const k=`${r.yr}|${r.wk}`;if(!wg[k])wg[k]=[];wg[k].push(r);});
+    Object.keys(wg).sort().forEach(wk=>{
+      const[yr,week]=wk.split('|').map(Number);
+      const ek=`${emp}|${yr}|${week}`;
+      const hj=ewj[ek];
+      const ji=jwk.find(j=>j.emp===emp&&j.yr===yr&&j.wk===week);
+      wg[wk].forEach(r=>{
+        const h=Math.floor(r.wm/60),m=r.wm%60;
+        dR.push([r.name,r.date,RLBL[r.reason]||r.reason,r.inOrig,r.inAdj,r.outAdj,`${h}시간 ${m}분`,r.pay]);
+      });
+      dR.push(['','','','','',hj?'주휴 ✓':'주휴없음',`${yr}년 ${week}주차`,hj?ji?.amt||0:0]);
+    });
+    const s=esal[emp]||{};
+    const h=Math.floor((s.tm||0)/60),m=(s.tm||0)%60;
+    dR.push([emp,'총금액','','','','',`${h}시간 ${m}분`,s.total]);
+    dR.push([]);
+  });
+  XLSX.utils.book_append_sheet(wb2,XLSX.utils.aoa_to_sheet(dR),'상세 근무 내역');
+  const sR=[['이름','총 근무일수','총 근무시간','주휴수당 합계','최종 지급액']];
+  emps.forEach(emp=>{
+    const v=esal[emp]||{};const h=Math.floor((v.tm||0)/60),m=(v.tm||0)%60;
+    sR.push([emp,`${v.days||0}일`,`${h}시간 ${m}분`,v.juhu||0,v.total||0]);
+  });
+  const tM=Object.values(esal).reduce((s,v)=>s+v.tm,0);
+  sR.push(['합 계',
+    Object.values(esal).reduce((s,v)=>s+v.days,0)+'일',
+    `${Math.floor(tM/60)}시간 ${tM%60}분`,
+    Object.values(esal).reduce((s,v)=>s+v.juhu,0),
+    Object.values(esal).reduce((s,v)=>s+v.total,0)
+  ]);
+  XLSX.utils.book_append_sheet(wb2,XLSX.utils.aoa_to_sheet(sR),'급여 요약표');
+  XLSX.writeFile(wb2,'급여계산결과.xlsx');
+}
+
+// ─── 직원별 이미지 생성 & ZIP 다운로드 ───
+async function downloadAllImages(){
+  if(!cur||!pd.length){alert('데이터를 먼저 업로드해주세요.');return;}
+  cur=processAll();
+  const month=pd[0]?.date?.slice(0,7)||'';
+
+  // 진행 팝업
+  showPopup('🖼️ 이미지 생성 중...', `총 ${emps.length}명 이미지를 ZIP으로 묶는 중입니다. 잠시만 기다려주세요.`);
+
+  const zip=new JSZip();
+  const folder=zip.folder(`근무내역_${month}`);
+
+  for(const emp of emps){
+    const empRows=pd.filter(r=>r.name===emp);
+    if(!empRows.length) continue;
+    const blob=await drawEmpImageBlob(emp,empRows,month);
+    folder.file(`${emp}_${month}_근무내역.png`, blob);
+  }
+
+  // ZIP 생성 및 다운로드
+  const zipBlob=await zip.generateAsync({type:'blob'});
+  const url=URL.createObjectURL(zipBlob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`더제이수_근무내역_${month}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+
+  showPopup('✅ 완료!',`${emps.length}명의 근무내역 이미지가 ZIP 파일로 다운로드됐어요.\n파일명: 더제이수_근무내역_${month}.zip`);
+}
+
+function drawEmpImageBlob(empName, rows, month){
+  return new Promise(resolve=>{
+    const DOW2=['일','월','화','수','목','금','토'];
+    const PAD=28, TITLE_H=72, HEADER_H=38, ROW_H=38, FOOTER_H=52;
+    const COL_W=[110,50,90,90,110];
+    const total_w=PAD*2+COL_W.reduce((a,b)=>a+b,0);
+    const total_h=TITLE_H+HEADER_H+ROW_H*rows.length+FOOTER_H;
+    const DPR=2;
+
+    const canvas=document.createElement('canvas');
+    canvas.width=total_w*DPR;
+    canvas.height=total_h*DPR;
+    const ctx=canvas.getContext('2d');
+    ctx.scale(DPR,DPR);
+
+    // 배경
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,total_w,total_h);
+
+    // 타이틀 배경
+    ctx.fillStyle='#1e2d3d';
+    ctx.fillRect(0,0,total_w,TITLE_H);
+
+    // 이름
+    ctx.fillStyle='#ffffff';
+    ctx.font='bold 20px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    ctx.textBaseline='middle';
+    ctx.textAlign='left';
+    ctx.fillText(empName, PAD, TITLE_H*0.38);
+
+    // 서브타이틀
+    ctx.fillStyle='#8ba3bc';
+    ctx.font='12px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    ctx.fillText(month+' 근무 내역', PAD, TITLE_H*0.72);
+
+    // 헤더
+    ctx.fillStyle='#edf0f4';
+    ctx.fillRect(0,TITLE_H,total_w,HEADER_H);
+    const headers=['날짜','요일','출근','퇴근','근무시간'];
+    ctx.fillStyle='#2e4057';
+    ctx.font='bold 12px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    ctx.textBaseline='middle';
+    let xh=PAD;
+    headers.forEach((h,i)=>{
+      ctx.textAlign='center';
+      ctx.fillText(h, xh+COL_W[i]/2, TITLE_H+HEADER_H/2);
+      xh+=COL_W[i];
+    });
+
+    // 데이터 행
+    let totalMin=0;
+    rows.forEach((row,ri)=>{
+      const ry=TITLE_H+HEADER_H+ri*ROW_H;
+      ctx.fillStyle=ri%2===0?'#f8f9fb':'#ffffff';
+      ctx.fillRect(0,ry,total_w,ROW_H);
+      ctx.strokeStyle='#e8eaed';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(0,ry+ROW_H);
+      ctx.lineTo(total_w,ry+ROW_H);
+      ctx.stroke();
+
+      const dow=DOW2[new Date(row.date).getDay()];
+      const day=new Date(row.date).getDay();
+      const isSat=day===6, isSun=day===0;
+      const dowColor=isSun?'#e74c3c':isSat?'#2980b9':'#555';
+      const wh=Math.floor(row.wm/60),wm2=row.wm%60;
+      totalMin+=row.wm;
+
+      const vals=[row.date.slice(5).replace('-','/'), dow, row.inAdj, row.outAdj, `${wh}:${String(wm2).padStart(2,'0')}`];
+      const colors=['#333',dowColor,'#222','#222','#1e2d3d'];
+      const bolds=[false,true,false,false,true];
+
+      ctx.textBaseline='middle';
+      let xd=PAD;
+      vals.forEach((v,i)=>{
+        ctx.fillStyle=colors[i];
+        ctx.font=(bolds[i]?'bold ':'')+`13px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif`;
+        ctx.textAlign='center';
+        ctx.fillText(v, xd+COL_W[i]/2, ry+ROW_H/2);
+        xd+=COL_W[i];
+      });
+    });
+
+    // 푸터
+    const fy=TITLE_H+HEADER_H+ROW_H*rows.length;
+    ctx.fillStyle='#f0f2f5';
+    ctx.fillRect(0,fy,total_w,FOOTER_H);
+    ctx.strokeStyle='#dde0e6';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(0,fy);
+    ctx.lineTo(total_w,fy);
+    ctx.stroke();
+
+    const th=Math.floor(totalMin/60),tm2=totalMin%60;
+    ctx.fillStyle='#2e4057';
+    ctx.font='bold 12px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(`총 ${rows.length}일 근무  |  총 ${th}시간 ${tm2}분`, total_w/2, fy+FOOTER_H/2);
+
+    canvas.toBlob(blob=>resolve(blob),'image/png');
+  });
+}
+
+function resetAll(){
+  rawData=[];pd=[];emps=[];excl.clear();manual={};absDec={};noJuhu.clear();
+  document.getElementById('uploadZone').style.display='block';
+  document.getElementById('resultArea').style.display='none';
+  document.getElementById('fileInput').value='';
+  document.getElementById('work4EditPanel').style.display='none';
+  document.getElementById('work4EditBtn').textContent='✏️ 편집';
+}
+
+// 페이지 로드 시 초기 입력란 생성
+document.addEventListener('DOMContentLoaded',()=>{
+  initWork4Inputs();
+});
+
+document.getElementById('fileInput').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
+const zone=document.getElementById('uploadZone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+</script>
+</body>
+</html>
