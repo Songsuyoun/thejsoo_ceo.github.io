@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사진 보정 금액 계산기 | 더제이수</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root {
+    --bg: #F5F0EB;
+    --bg-card: #FFFFFF;
+    --bg-soft: #FAF6F1;
+    --ink: #1A1A1A;
+    --ink-soft: #6B6258;
+    --ink-muted: #9A9087;
+    --line: #E8DFD3;
+    --line-soft: #F0E8DD;
+    --accent: #8B6F47;
+    --accent-soft: #C9B59B;
+    --highlight: #E8DCC4;
+    --danger: #C44536;
+    --success: #6B8E4E;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 32px 16px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 32px 24px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .header-eyebrow {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .header h1 {
+    font-family: 'EB Garamond', serif;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--bg-card);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+
+  .tab:hover { color: var(--ink); }
+
+  .tab.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 960px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .panel-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .panel-subtitle {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-bottom: 24px;
+  }
+
+  /* INPUT TABLE */
+  .input-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .input-table th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .input-table th:nth-child(1) { width: 70px; }
+  .input-table th:nth-child(2) { width: auto; }
+  .input-table th:nth-child(3) { width: 110px; text-align: right; }
+  .input-table th:nth-child(4) { width: 36px; }
+
+  .input-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .folder-num {
+    font-family: 'EB Garamond', serif;
+    font-size: 16px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .qty-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    background: var(--bg-soft);
+    color: var(--ink);
+    transition: all 0.15s;
+  }
+
+  .qty-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  .qty-input.invalid {
+    border-color: var(--danger);
+    background: #FDF2F0;
+  }
+
+  .price-cell {
+    text-align: right;
+    font-family: 'EB Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .price-cell.empty { color: var(--ink-muted); }
+  .price-cell.warn { color: var(--danger); font-size: 12px; font-family: inherit; }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--ink-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.15s;
+  }
+
+  .delete-btn:hover {
+    color: var(--danger);
+    background: #FDF2F0;
+  }
+
+  .add-row-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 11px;
+    background: var(--bg-soft);
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .add-row-btn:hover {
+    background: var(--highlight);
+    border-color: var(--accent-soft);
+    color: var(--ink);
+  }
+
+  /* SUMMARY */
+  .summary-box {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--highlight);
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .summary-label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+
+  .summary-amount {
+    font-family: 'EB Garamond', serif;
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .summary-amount .unit {
+    font-size: 16px;
+    color: var(--ink-soft);
+    margin-left: 4px;
+  }
+
+  .summary-meta {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 6px;
+  }
+
+  /* EMAIL PANEL */
+  .email-panel {
+    position: sticky;
+    top: 32px;
+  }
+
+  .email-preview {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  .email-field {
+    margin-bottom: 14px;
+  }
+
+  .email-field:last-child { margin-bottom: 0; }
+
+  .email-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .email-subject {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+  }
+
+  .email-body {
+    background: #fff;
+    border: 1px solid var(--line-soft);
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink);
+    white-space: pre-wrap;
+    min-height: 120px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .copy-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .copy-btn:hover {
+    background: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .copy-btn.copied {
+    background: var(--success);
+  }
+
+  .copy-btn-secondary {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn-secondary:hover {
+    background: var(--bg-soft);
+    color: var(--ink);
+    border-color: var(--ink-soft);
+  }
+
+  /* GMAIL BUTTON */
+  .gmail-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--ink);
+    color: var(--bg);
+    border: 1px solid var(--ink);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .gmail-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .gmail-icon {
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 4px;
+    padding: 2px;
+  }
+
+  /* RECIPIENT INPUT */
+  .recipient-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+
+  .recipient-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+    flex-shrink: 0;
+    width: 60px;
+  }
+
+  .recipient-input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    background: var(--bg-soft);
+    color: var(--ink);
+  }
+
+  .recipient-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  /* PRICE TABLE INFO */
+  .price-table-info {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+
+  .info-title {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .info-item {
+    background: var(--bg-soft);
+    padding: 8px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .info-item-qty {
+    color: var(--ink-muted);
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .info-item-price {
+    font-family: 'EB Garamond', serif;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 12px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+    z-index: 100;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* TOOLTIP / HELP */
+  .help-banner {
+    background: var(--bg-soft);
+    border-left: 3px solid var(--accent-soft);
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  .help-banner strong { color: var(--ink); font-weight: 600; }
+
+  /* TAB CONTENT */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header class="header">
+    <div class="header-eyebrow">THE J.SOO · PHOTO RETOUCH</div>
+    <h1>사진 보정 금액 계산기</h1>
+    <p>폴더별 사진 갯수만 입력하면 금액이 자동 계산되고 메일 양식까지 한 번에 ✨</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="phone">📱 핸드폰 사진</button>
+    <button class="tab" data-tab="lookbook">📸 룩북 (정교 작업)</button>
+  </div>
+
+  <!-- PHONE TAB -->
+  <div class="tab-content active" id="tab-phone">
+    <div class="help-banner">
+      <strong>핸드폰 사진 보정</strong> · 사진 갯수에 따라 단가표 기준으로 계산됩니다 (5장 = 6,000원 ~ 26장 = 23,000원)
+    </div>
+    <div class="main-grid">
+      <div class="panel">
+        <div class="panel-title">폴더별 입력</div>
+        <div class="panel-subtitle">사진 갯수만 입력하세요. 빈 폴더는 자동으로 제외됩니다.</div>
+        <table class="input-table">
+          <thead>
+            <tr>
+              <th>폴더</th>
+              <th>사진 갯수</th>
+              <th>금액</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="phone-tbody"></tbody>
+        </table>
+        <button class="add-row-btn" onclick="addRow('phone')">+ 폴더 추가</button>
+
+        <div class="summary-box">
+          <div>
+            <div class="summary-label">총 금액</div>
+            <div class="summary-meta" id="phone-meta">폴더 0개 · 사진 0장</div>
+          </div>
+          <div class="summary-amount" id="phone-total">0<span class="unit">원</span></div>
+        </div>
+
+        <div class="price-table-info">
+          <div class="info-title">단가표 (참고)</div>
+          <div class="info-grid" id="phone-price-grid"></div>
+        </div>
+      </div>
+
+      <div class="panel email-panel">
+        <div class="panel-title">메일 양식</div>
+        <div class="panel-subtitle">자동 생성된 메일 내용을 복사하거나 Gmail로 바로 보내세요</div>
+        <div class="recipient-row">
+          <div class="recipient-label">받는사람</div>
+          <input type="email" class="recipient-input" id="phone-recipient" value="hayana100@nate.com" placeholder="freelancer@example.com">
+        </div>
+        <div class="email-preview">
+          <div class="email-field">
+            <div class="email-label">제목</div>
+            <div class="email-subject" id="phone-email-subject">작업 요청 드립니다 ^^</div>
+          </div>
+          <div class="email-field">
+            <div class="email-label">내용</div>
+            <div class="email-body" id="phone-email-body">사진을 입력해 주세요.</div>
+          </div>
+        </div>
+        <button class="gmail-btn" onclick="openGmail('phone')">
+          <svg class="gmail-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4285f4" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/></svg>
+          <span>Gmail로 바로 작성</span>
+        </button>
+        <button class="copy-btn-secondary" onclick="copyEmail('phone', 'subject')">제목만 복사</button>
+        <button class="copy-btn-secondary" onclick="copyEmail('phone', 'body')">내용만 복사</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOOKBOOK TAB -->
+  <div class="tab-content" id="tab-lookbook">
+    <div class="help-banner">
+      <strong>룩북 보정</strong> · 더 정교한 작업이 필요한 룩북 사진은 <strong>장당 4,000원</strong> 정액제로 계산됩니다.
+    </div>
+    <div class="main-grid">
+      <div class="panel">
+        <div class="panel-title">폴더별 입력</div>
+        <div class="panel-subtitle">룩북은 사진 1장당 4,000원으로 계산됩니다.</div>
+        <table class="input-table">
+          <thead>
+            <tr>
+              <th>폴더</th>
+              <th>사진 갯수</th>
+              <th>금액</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="lookbook-tbody"></tbody>
+        </table>
+        <button class="add-row-btn" onclick="addRow('lookbook')">+ 폴더 추가</button>
+
+        <div class="summary-box">
+          <div>
+            <div class="summary-label">총 금액</div>
+            <div class="summary-meta" id="lookbook-meta">폴더 0개 · 사진 0장</div>
+          </div>
+          <div class="summary-amount" id="lookbook-total">0<span class="unit">원</span></div>
+        </div>
+      </div>
+
+      <div class="panel email-panel">
+        <div class="panel-title">메일 양식</div>
+        <div class="panel-subtitle">자동 생성된 메일 내용을 복사하거나 Gmail로 바로 보내세요</div>
+        <div class="recipient-row">
+          <div class="recipient-label">받는사람</div>
+          <input type="email" class="recipient-input" id="lookbook-recipient" value="hayana100@nate.com" placeholder="freelancer@example.com">
+        </div>
+        <div class="email-preview">
+          <div class="email-field">
+            <div class="email-label">제목</div>
+            <div class="email-subject" id="lookbook-email-subject">작업 요청 드립니다 ^^</div>
+          </div>
+          <div class="email-field">
+            <div class="email-label">내용</div>
+            <div class="email-body" id="lookbook-email-body">사진을 입력해 주세요.</div>
+          </div>
+        </div>
+        <button class="gmail-btn" onclick="openGmail('lookbook')">
+          <svg class="gmail-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#4285f4" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/></svg>
+          <span>Gmail로 바로 작성</span>
+        </button>
+        <button class="copy-btn-secondary" onclick="copyEmail('lookbook', 'subject')">제목만 복사</button>
+        <button class="copy-btn-secondary" onclick="copyEmail('lookbook', 'body')">내용만 복사</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">복사되었습니다 ✓</div>
+
+<script>
+// 단가표 (엑셀의 금액표 시트와 동일)
+const PRICE_TABLE = {
+  5: 6000, 6: 7000, 7: 8000, 8: 9000, 9: 9500, 10: 10000,
+  11: 11000, 12: 12000, 13: 13000, 14: 14000, 15: 15000, 16: 16000,
+  17: 17000, 18: 18000, 19: 19000, 20: 20000, 21: 20500, 22: 21000,
+  23: 21500, 24: 22000, 25: 22500, 26: 23000
+};
+
+const LOOKBOOK_PER_PHOTO = 4000;
+const MIN_QTY = Math.min(...Object.keys(PRICE_TABLE).map(Number));
+const MAX_QTY = Math.max(...Object.keys(PRICE_TABLE).map(Number));
+
+// 상태 관리
+const state = {
+  phone: [],
+  lookbook: []
+};
+
+// 핸드폰 사진 금액 계산
+function getPhonePrice(qty, isTyping) {
+  if (qty === 0) return { price: 0, valid: true };
+  // 입력 중인 1자리 숫자(1~4)는 에러 표시하지 않음 (사용자가 두 자리 입력하려는 중일 수 있음)
+  if (qty < MIN_QTY) {
+    if (isTyping && qty < 10) return { price: 0, valid: true, pending: true };
+    return { price: 0, valid: false, msg: `최소 ${MIN_QTY}장` };
+  }
+  if (qty > MAX_QTY) return { price: 0, valid: false, msg: `최대 ${MAX_QTY}장` };
+  return { price: PRICE_TABLE[qty], valid: true };
+}
+
+// 룩북 금액 계산
+function getLookbookPrice(qty) {
+  return { price: qty * LOOKBOOK_PER_PHOTO, valid: true };
+}
+
+// 행 추가
+function addRow(type) {
+  state[type].push({ qty: '' });
+  render(type);
+}
+
+// 행 삭제
+function removeRow(type, index) {
+  state[type].splice(index, 1);
+  render(type);
+}
+
+// 입력 변경 (숫자만 허용)
+function onQtyChange(type, index, value) {
+  // 숫자가 아닌 문자 제거
+  const cleaned = value.replace(/[^0-9]/g, '');
+  state[type][index].qty = cleaned;
+  render(type);
+  // 포커스 복원 (re-render 후에도 같은 input에 머물도록)
+  requestAnimationFrame(() => {
+    const input = document.querySelector(`input[data-type="${type}"][data-index="${index}"]`);
+    if (input) {
+      input.focus();
+      // 커서를 끝으로
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  });
+}
+
+// 입력 칸에서 빠져나갔을 때
+function onBlurInput(type, index) {
+  if (focusedInput && focusedInput.type === type && focusedInput.index === index) {
+    focusedInput = null;
+    render(type);  // 포커스 풀린 후 검증 표시
+  }
+}
+
+// 천 단위 콤마
+function fmt(n) {
+  return n.toLocaleString('ko-KR');
+}
+
+// 현재 포커스된 입력 추적 (입력 중인 행은 검증 완화)
+let focusedInput = null;
+
+// 렌더링
+function render(type) {
+  const tbody = document.getElementById(`${type}-tbody`);
+  const items = state[type];
+  const priceFn = type === 'phone' ? getPhonePrice : getLookbookPrice;
+
+  tbody.innerHTML = items.map((item, i) => {
+    const qty = parseInt(item.qty) || 0;
+    const isTyping = focusedInput && focusedInput.type === type && focusedInput.index === i;
+    const result = type === 'phone' ? priceFn(qty, isTyping) : priceFn(qty);
+    const isEmpty = item.qty === '' || qty === 0;
+
+    let priceHtml;
+    if (isEmpty || result.pending) {
+      priceHtml = `<td class="price-cell empty">—</td>`;
+    } else if (!result.valid) {
+      priceHtml = `<td class="price-cell warn">${result.msg}</td>`;
+    } else {
+      priceHtml = `<td class="price-cell">${fmt(result.price)}원</td>`;
+    }
+
+    const showInvalid = !result.valid && !isEmpty && !result.pending;
+
+    return `
+      <tr>
+        <td><span class="folder-num">${i + 1}</span></td>
+        <td>
+          <input
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            class="qty-input ${showInvalid ? 'invalid' : ''}"
+            value="${item.qty}"
+            placeholder="0"
+            data-type="${type}"
+            data-index="${i}"
+            oninput="onQtyChange('${type}', ${i}, this.value)"
+            onfocus="focusedInput = {type: '${type}', index: ${i}}"
+            onblur="onBlurInput('${type}', ${i})">
+        </td>
+        ${priceHtml}
+        <td>
+          <button class="delete-btn" onclick="removeRow('${type}', ${i})" title="삭제">×</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // 총합 (입력 중이어도 5장 이상이면 포함, 미만이면 제외)
+  let total = 0;
+  let validFolders = 0;
+  let totalPhotos = 0;
+  items.forEach(item => {
+    const qty = parseInt(item.qty) || 0;
+    if (qty > 0) {
+      const r = type === 'phone' ? priceFn(qty, false) : priceFn(qty);
+      if (r.valid) {
+        total += r.price;
+        validFolders += 1;
+        totalPhotos += qty;
+      }
+    }
+  });
+
+  document.getElementById(`${type}-total`).innerHTML = `${fmt(total)}<span class="unit">원</span>`;
+  document.getElementById(`${type}-meta`).textContent = `폴더 ${validFolders}개 · 사진 ${totalPhotos}장`;
+
+  // 메일 양식 업데이트
+  updateEmail(type, items, total, priceFn);
+}
+
+// 메일 양식 생성
+function updateEmail(type, items, total, priceFn) {
+  const lines = [];
+  items.forEach((item, idx) => {
+    const qty = parseInt(item.qty) || 0;
+    if (qty > 0) {
+      const r = type === 'phone' ? priceFn(qty, false) : priceFn(qty);
+      if (r.valid) {
+        lines.push(`${idx + 1}번 폴더: ${qty}개 = ${fmt(r.price)}원`);
+      }
+    }
+  });
+
+  let body;
+  if (lines.length === 0) {
+    body = '사진을 입력해 주세요.';
+  } else {
+    body = lines.join('\n') + `\n\n총 ${fmt(total)}원 송금드립니다.\n감사합니다 ^^`;
+  }
+
+  document.getElementById(`${type}-email-body`).textContent = body;
+}
+
+// 단가표 정보 렌더
+function renderPriceGrid() {
+  const grid = document.getElementById('phone-price-grid');
+  grid.innerHTML = Object.entries(PRICE_TABLE).map(([qty, price]) => `
+    <div class="info-item">
+      <div class="info-item-qty">${qty}장</div>
+      <div class="info-item-price">${fmt(price)}</div>
+    </div>
+  `).join('');
+}
+
+// 복사 기능
+function copyEmail(type, part) {
+  const subject = document.getElementById(`${type}-email-subject`).textContent;
+  const body = document.getElementById(`${type}-email-body`).textContent;
+
+  let text;
+  if (part === 'subject') text = subject;
+  else if (part === 'body') text = body;
+  else text = `제목: ${subject}\n\n${body}`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(part === 'all' ? '메일이 복사되었습니다 ✓' : part === 'subject' ? '제목이 복사되었습니다 ✓' : '내용이 복사되었습니다 ✓');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('복사되었습니다 ✓');
+  });
+}
+
+// Gmail 작성 창 열기
+function openGmail(type) {
+  const recipient = document.getElementById(`${type}-recipient`).value.trim();
+  const subject = document.getElementById(`${type}-email-subject`).textContent;
+  const body = document.getElementById(`${type}-email-body`).textContent;
+
+  if (body === '사진을 입력해 주세요.') {
+    showToast('먼저 사진 갯수를 입력해 주세요');
+    return;
+  }
+
+  // Gmail compose URL — 받는사람/제목/본문 자동 채움
+  const params = new URLSearchParams({
+    view: 'cm',
+    fs: '1',
+    to: recipient,
+    su: subject,
+    body: body
+  });
+
+  const gmailUrl = `https://mail.google.com/mail/?${params.toString()}`;
+  window.open(gmailUrl, '_blank');
+  showToast('Gmail 작성 창이 열렸습니다 ✓');
+}
+
+// 토스트 표시
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// 탭 전환
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(`tab-${target}`).classList.add('active');
+  });
+});
+
+// 초기화 - 핸드폰/룩북 모두 5개 폴더로 시작
+function init() {
+  for (let i = 0; i < 5; i++) state.phone.push({ qty: '' });
+  for (let i = 0; i < 5; i++) state.lookbook.push({ qty: '' });
+  render('phone');
+  render('lookbook');
+  renderPriceGrid();
+}
+
+init();
+</script>
+
+</body>
+</html>
