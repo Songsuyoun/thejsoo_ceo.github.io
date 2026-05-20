@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>은퇴 복리 계산기 | Retirement Compound Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --color-text: #1a1a1a;
+    --color-text-sub: #555;
+    --color-text-mute: #888;
+    --color-text-light: #999;
+    --color-bg: #ffffff;
+    --color-bg-soft: #fafafa;
+    --color-bg-section: #f7f7f5;
+    --color-border: #ececec;
+    --color-border-strong: #d4d4d4;
+    --color-success: #2d6a4f;
+    --color-success-bg: #e8f3ee;
+    --color-danger: #a33a3a;
+    --color-danger-bg: #fbe9e9;
+    --color-accent: #1a1a1a;
+    --color-line-primary: #1a1a1a;
+    --color-line-principal: #999;
+    --color-line-real: #2d6a4f;
+    --color-line-goal: #c8754d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.2px;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 60px 32px 80px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 0.5px solid var(--color-border);
+  }
+
+  .header h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: 25px;
+    font-weight: 400;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+
+  .header .sub {
+    font-size: 12px;
+    color: var(--color-text-light);
+    font-family: 'Noto Sans KR', sans-serif;
+    letter-spacing: 0.5px;
+  }
+
+  .status-banner {
+    padding: 18px 24px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 0.5px solid;
+  }
+
+  .status-banner.success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border-color: var(--color-success);
+  }
+
+  .status-banner.danger {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+  }
+
+  .status-banner b { font-weight: 500; }
+
+  .metric-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .metric-card {
+    background: var(--color-bg-soft);
+    border-radius: 4px;
+    padding: 20px 22px;
+    border: 0.5px solid var(--color-border);
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--color-text-light);
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .metric-value {
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--color-text);
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+  }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--color-text-mute);
+    margin-top: 6px;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .metric-card.gain .metric-value { color: var(--color-success); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .section {
+    background: var(--color-bg-soft);
+    border: 0.5px solid var(--color-border);
+    border-radius: 4px;
+    padding: 24px 26px;
+  }
+
+  .section h3 {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--color-text);
+    font-family: 'Inter', sans-serif;
+    padding-bottom: 12px;
+    border-bottom: 0.5px solid var(--color-border);
+  }
+
+  .row { margin-bottom: 20px; }
+  .row:last-child { margin-bottom: 0; }
+
+  .row-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  .row-label-text {
+    font-size: 12px;
+    color: var(--color-text-sub);
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .row-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text);
+    letter-spacing: -0.2px;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 2px;
+    background: var(--color-border-strong);
+    border-radius: 0;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--color-text);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: var(--color-text);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+
+  input[type="number"] {
+    width: 80px;
+    padding: 7px 9px;
+    border: 0.5px solid var(--color-border-strong);
+    border-radius: 2px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    text-align: right;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--color-text);
+  }
+
+  .toggle-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .toggle-btn {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 11px;
+    background: transparent;
+    border: 0.5px solid var(--color-border-strong);
+    border-radius: 2px;
+    cursor: pointer;
+    color: var(--color-text-sub);
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .toggle-btn:hover { border-color: var(--color-text); }
+  .toggle-btn.active {
+    background: var(--color-text);
+    color: var(--color-bg);
+    border-color: var(--color-text);
+  }
+
+  .action-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    padding: 12px 20px;
+    font-size: 12px;
+    background: var(--color-bg);
+    border: 0.5px solid var(--color-text);
+    border-radius: 2px;
+    cursor: pointer;
+    color: var(--color-text);
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .action-btn:hover {
+    background: var(--color-text);
+    color: var(--color-bg);
+  }
+  .action-btn.primary {
+    background: var(--color-text);
+    color: var(--color-bg);
+  }
+  .action-btn.primary:hover {
+    background: transparent;
+    color: var(--color-text);
+  }
+
+  .chart-section {
+    background: var(--color-bg);
+    border: 0.5px solid var(--color-border);
+    border-radius: 4px;
+    padding: 28px 28px 24px;
+    margin-bottom: 32px;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 0.5px solid var(--color-border);
+  }
+
+  .chart-title-en {
+    font-size: 16px;
+    font-weight: 400;
+    letter-spacing: -0.2px;
+  }
+
+  .chart-title-ko {
+    font-size: 11px;
+    color: var(--color-text-light);
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 340px;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 0.5px solid var(--color-border);
+    font-size: 11px;
+    color: var(--color-text-sub);
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend-swatch {
+    width: 18px;
+    height: 2px;
+  }
+
+  .summary-table {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+  }
+  .summary-table td {
+    padding: 11px 0;
+    border-bottom: 0.5px solid var(--color-border);
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .summary-table td:first-child {
+    color: var(--color-text-sub);
+  }
+  .summary-table td:last-child {
+    text-align: right;
+    font-weight: 500;
+    color: var(--color-text);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.2px;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+
+  .footer {
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 0.5px solid var(--color-border);
+    text-align: center;
+    font-size: 11px;
+    color: var(--color-text-light);
+    font-family: 'Noto Sans KR', sans-serif;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 40px 20px 60px; }
+    .header h1 { font-size: 20px; }
+    .metric-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; gap: 16px; }
+    .section { padding: 20px; }
+    .metric-value { font-size: 18px; }
+    .chart-section { padding: 20px; }
+    .chart-canvas-wrap { height: 280px; }
+    input[type="number"] { width: 70px; }
+    .action-btn { font-size: 11px; padding: 10px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1>RETIREMENT COMPOUND CALCULATOR</h1>
+    <p class="sub">은퇴 복리 계산기</p>
+  </div>
+
+  <div id="status-banner" class="status-banner success">
+    <span id="status-text">목표 달성 가능합니다</span>
+  </div>
+
+  <div class="metric-row">
+    <div class="metric-card">
+      <div class="metric-label">FINAL (NOMINAL)</div>
+      <div class="metric-value" id="m-final-nominal">0원</div>
+      <div class="metric-sub" id="m-final-nominal-sub">은퇴 시점 명목 자산</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">FINAL (REAL)</div>
+      <div class="metric-value" id="m-final-real">0원</div>
+      <div class="metric-sub">현재 가치 기준 실질 가치</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">PRINCIPAL</div>
+      <div class="metric-value" id="m-principal">0원</div>
+      <div class="metric-sub">총 투자 원금</div>
+    </div>
+    <div class="metric-card gain">
+      <div class="metric-label">COMPOUND GAIN</div>
+      <div class="metric-value" id="m-gain">0원</div>
+      <div class="metric-sub" id="m-gain-sub">총 수익률 -%</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <div class="section">
+      <h3>AGE &amp; GOAL</h3>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="row-label-text">현재 나이</span>
+          <span class="row-value"><span id="v-age-now">37</span>세</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="r-age-now" min="20" max="70" step="1" value="37" />
+          <input type="number" id="n-age-now" min="20" max="70" step="1" value="37" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="row-label-text">은퇴 나이</span>
+          <span class="row-value"><span id="v-age-ret">60</span>세</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="r-age-ret" min="30" max="85" step="1" value="60" />
+          <input type="number" id="n-age-ret" min="30" max="85" step="1" value="60" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="row-label-text">목표 금액 (억원)</span>
+          <span class="row-value"><span id="v-goal">10</span>억원</span>
+        </div>
+        <div class="toggle-row">
+          <button class="toggle-btn active" id="t-goal-real" type="button">현재 가치 기준</button>
+          <button class="toggle-btn" id="t-goal-nominal" type="button">미래 명목 금액</button>
+        </div>
+        <div class="input-row">
+          <input type="range" id="r-goal" min="1" max="100" step="1" value="10" />
+          <input type="number" id="n-goal" min="1" max="500" step="0.5" value="10" />
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>INVESTMENT</h3>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="row-label-text">현재 보유 자산 (만원)</span>
+          <span class="row-value"><span id="v-init">15,000</span>만원</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="r-init" min="0" max="100000" step="500" value="15000" />
+          <input type="number" id="n-init" min="0" max="1000000" step="100" value="15000" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="row-label-text">월 투자금 (만원)</span>
+          <span class="row-value"><span id="v-monthly">100</span>만원</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="r-monthly" min="0" max="1000" step="10" value="100" />
+          <input type="number" id="n-monthly" min="0" max="10000" step="10" value="100" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="row-label-text">연 수익률 (세전)</span>
+          <span class="row-value"><span id="v-rate">10.0</span>%</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="r-rate" min="0" max="20" step="0.1" value="10.0" />
+          <input type="number" id="n-rate" min="0" max="50" step="0.1" value="10.0" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="row-label-text">연 인플레이션</span>
+          <span class="row-value"><span id="v-infl">2.5</span>%</span>
+        </div>
+        <div class="input-row">
+          <input type="range" id="r-infl" min="0" max="10" step="0.1" value="2.5" />
+          <input type="number" id="n-infl" min="0" max="20" step="0.1" value="2.5" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="action-btn primary" id="btn-solve-monthly" type="button">
+      목표 달성에 필요한 월 투자금 계산
+    </button>
+    <button class="action-btn" id="btn-solve-rate" type="button">
+      필요한 수익률 계산
+    </button>
+    <button class="action-btn" id="btn-reset" type="button">
+      초기화
+    </button>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title-en">GROWTH PROJECTION</div>
+        <div class="chart-title-ko">연도별 자산 증가 곡선</div>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap">
+      <canvas id="growthChart" role="img" aria-label="연도별 자산 증가 곡선">자산이 시간에 따라 복리로 증가하는 추이</canvas>
+    </div>
+    <div class="chart-legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:#1a1a1a;"></span>명목 자산</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#999;"></span>누적 원금</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:repeating-linear-gradient(90deg,#2d6a4f 0,#2d6a4f 4px,transparent 4px,transparent 7px);"></span>실질 가치 (현재 기준)</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:repeating-linear-gradient(90deg,#c8754d 0,#c8754d 2px,transparent 2px,transparent 5px);"></span>목표 금액 (명목)</span>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="section">
+      <h3>RETIREMENT SUMMARY</h3>
+      <table class="summary-table">
+        <tr><td>투자 기간</td><td id="s-years">- 년</td></tr>
+        <tr><td>현재 자산</td><td id="s-init">- 원</td></tr>
+        <tr><td>총 월 투자 누적</td><td id="s-monthly-total">- 원</td></tr>
+        <tr><td>총 투자 원금</td><td id="s-principal">- 원</td></tr>
+        <tr><td>복리 수익</td><td id="s-gain">- 원</td></tr>
+        <tr><td>최종 자산 (명목)</td><td id="s-final-nom">- 원</td></tr>
+        <tr><td>최종 자산 (현재 가치)</td><td id="s-final-real">- 원</td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>GOAL ANALYSIS</h3>
+      <table class="summary-table">
+        <tr><td>목표 금액 (현재 가치)</td><td id="g-real">- 원</td></tr>
+        <tr><td>목표 금액 (은퇴 시점 명목)</td><td id="g-nominal">- 원</td></tr>
+        <tr><td>예상 도달률</td><td id="g-ratio">- %</td></tr>
+        <tr><td>목표 도달 시점</td><td id="g-reach-age">- 세</td></tr>
+        <tr><td>목표 달성 필요 월 투자금</td><td id="g-need-monthly">- 원</td></tr>
+        <tr><td>목표 달성 필요 수익률</td><td id="g-need-rate">- %</td></tr>
+        <tr><td>실질 수익률</td><td id="g-real-rate">- %</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    본 계산기는 단순 시뮬레이션 도구이며 실제 투자 결과를 보장하지 않습니다.<br>
+    세금, 수수료, 수익률 변동성은 반영되어 있지 않습니다.
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const state = {
+    ageNow: 37,
+    ageRet: 60,
+    goal: 10,
+    goalMode: 'real',
+    init: 15000,
+    monthly: 100,
+    rate: 10.0,
+    infl: 2.5
+  };
+
+  const defaults = { ...state };
+  let chart = null;
+
+  function fmtKRW(won) {
+    if (!isFinite(won) || won === null) return '-';
+    const abs = Math.abs(won);
+    const sign = won < 0 ? '-' : '';
+    if (abs >= 1e12) return sign + (abs / 1e12).toFixed(2) + '조원';
+    if (abs >= 1e8) return sign + (abs / 1e8).toFixed(2) + '억원';
+    if (abs >= 1e4) return sign + Math.round(abs / 1e4).toLocaleString() + '만원';
+    return sign + Math.round(abs).toLocaleString() + '원';
+  }
+
+  function fmtAxis(won) {
+    const abs = Math.abs(won);
+    if (abs >= 1e8) return (won / 1e8).toFixed(1) + '억';
+    if (abs >= 1e4) return Math.round(won / 1e4).toLocaleString() + '만';
+    return Math.round(won).toLocaleString();
+  }
+
+  function simulate(initWon, monthlyWon, annualRate, years) {
+    const months = Math.round(years * 12);
+    const monthlyRate = Math.pow(1 + annualRate / 100, 1 / 12) - 1;
+    const yearly = [initWon];
+    const yearlyPrincipal = [initWon];
+    let balance = initWon;
+    let principal = initWon;
+    for (let m = 1; m <= months; m++) {
+      balance = balance * (1 + monthlyRate) + monthlyWon;
+      principal += monthlyWon;
+      if (m % 12 === 0) {
+        yearly.push(balance);
+        yearlyPrincipal.push(principal);
+      }
+    }
+    return { yearly, yearlyPrincipal, finalBalance: balance, finalPrincipal: principal };
+  }
+
+  function solveMonthly(initWon, targetWon, annualRate, years) {
+    const months = Math.round(years * 12);
+    if (months <= 0) return null;
+    const monthlyRate = Math.pow(1 + annualRate / 100, 1 / 12) - 1;
+    const futureInit = initWon * Math.pow(1 + monthlyRate, months);
+    const needed = targetWon - futureInit;
+    if (needed <= 0) return 0;
+    if (Math.abs(monthlyRate) < 1e-10) return needed / months;
+    const annuityFactor = (Math.pow(1 + monthlyRate, months) - 1) / monthlyRate;
+    return needed / annuityFactor;
+  }
+
+  function solveRate(initWon, monthlyWon, targetWon, years) {
+    let lo = 0, hi = 50;
+    for (let i = 0; i < 80; i++) {
+      const mid = (lo + hi) / 2;
+      const sim = simulate(initWon, monthlyWon, mid, years);
+      if (sim.finalBalance < targetWon) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  function getGoalNominal() {
+    const years = state.ageRet - state.ageNow;
+    const goalWon = state.goal * 1e8;
+    if (state.goalMode === 'real') {
+      return goalWon * Math.pow(1 + state.infl / 100, years);
+    }
+    return goalWon;
+  }
+
+  function getGoalReal() {
+    const years = state.ageRet - state.ageNow;
+    const goalWon = state.goal * 1e8;
+    if (state.goalMode === 'nominal') {
+      return goalWon / Math.pow(1 + state.infl / 100, years);
+    }
+    return goalWon;
+  }
+
+  function findReachAge(yearly, targetNominal) {
+    for (let i = 0; i < yearly.length; i++) {
+      if (yearly[i] >= targetNominal) return state.ageNow + i;
+    }
+    return null;
+  }
+
+  function update() {
+    const years = state.ageRet - state.ageNow;
+    const banner = document.getElementById('status-banner');
+    const bannerText = document.getElementById('status-text');
+
+    if (years <= 0) {
+      banner.className = 'status-banner danger';
+      bannerText.textContent = '은퇴 나이는 현재 나이보다 커야 합니다';
+      return;
+    }
+
+    const initWon = state.init * 1e4;
+    const monthlyWon = state.monthly * 1e4;
+    const goalNominal = getGoalNominal();
+    const goalReal = getGoalReal();
+
+    const sim = simulate(initWon, monthlyWon, state.rate, years);
+    const finalNominal = sim.finalBalance;
+    const finalReal = finalNominal / Math.pow(1 + state.infl / 100, years);
+    const principal = sim.finalPrincipal;
+    const gain = finalNominal - principal;
+    const totalReturn = principal > 0 ? (gain / principal) * 100 : 0;
+
+    document.getElementById('m-final-nominal').textContent = fmtKRW(finalNominal);
+    document.getElementById('m-final-nominal-sub').textContent = years + '년 후 · ' + state.ageRet + '세';
+    document.getElementById('m-final-real').textContent = fmtKRW(finalReal);
+    document.getElementById('m-principal').textContent = fmtKRW(principal);
+    document.getElementById('m-gain').textContent = fmtKRW(gain);
+    document.getElementById('m-gain-sub').textContent = '총 수익률 ' + totalReturn.toFixed(0) + '%';
+
+    const reached = finalNominal >= goalNominal;
+    const ratio = goalNominal > 0 ? (finalNominal / goalNominal) * 100 : 0;
+    if (reached) {
+      banner.className = 'status-banner success';
+      bannerText.innerHTML = '목표 달성 가능 — 은퇴 시점에 목표의 <b>' + ratio.toFixed(0) + '%</b>에 도달합니다';
+    } else {
+      banner.className = 'status-banner danger';
+      const shortage = goalNominal - finalNominal;
+      bannerText.innerHTML = '목표 미달 — <b>' + fmtKRW(shortage) + '</b> 부족 (' + ratio.toFixed(0) + '% 도달)';
+    }
+
+    document.getElementById('s-years').textContent = years + '년';
+    document.getElementById('s-init').textContent = fmtKRW(initWon);
+    document.getElementById('s-monthly-total').textContent = fmtKRW(monthlyWon * years * 12);
+    document.getElementById('s-principal').textContent = fmtKRW(principal);
+    document.getElementById('s-gain').textContent = fmtKRW(gain);
+    document.getElementById('s-final-nom').textContent = fmtKRW(finalNominal);
+    document.getElementById('s-final-real').textContent = fmtKRW(finalReal);
+
+    document.getElementById('g-real').textContent = fmtKRW(goalReal);
+    document.getElementById('g-nominal').textContent = fmtKRW(goalNominal);
+    document.getElementById('g-ratio').textContent = ratio.toFixed(1) + '%';
+
+    const reachAge = findReachAge(sim.yearly, goalNominal);
+    document.getElementById('g-reach-age').textContent = reachAge ? reachAge + '세' : state.ageRet + '세 이내 미도달';
+
+    const needMonthly = solveMonthly(initWon, goalNominal, state.rate, years);
+    document.getElementById('g-need-monthly').textContent = needMonthly !== null && needMonthly >= 0 ? fmtKRW(needMonthly) + ' / 월' : '현재 자산만으로 도달';
+
+    const needRate = solveRate(initWon, monthlyWon, goalNominal, years);
+    document.getElementById('g-need-rate').textContent = needRate < 49.9 ? needRate.toFixed(2) + '%' : '도달 불가 (현 가정)';
+
+    const realRate = ((1 + state.rate / 100) / (1 + state.infl / 100) - 1) * 100;
+    document.getElementById('g-real-rate').textContent = realRate.toFixed(2) + '%';
+
+    renderChart(sim, goalNominal, years);
+  }
+
+  function renderChart(sim, goalNominal, years) {
+    const labels = [];
+    for (let y = 0; y <= years; y++) labels.push((state.ageNow + y) + '세');
+
+    const realSeries = sim.yearly.map((v, i) => v / Math.pow(1 + state.infl / 100, i));
+    const goalLine = sim.yearly.map(() => goalNominal);
+
+    if (chart) chart.destroy();
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: '명목 자산',
+            data: sim.yearly,
+            borderColor: '#1a1a1a',
+            backgroundColor: 'rgba(26,26,26,0.05)',
+            fill: true,
+            tension: 0.25,
+            borderWidth: 1.5,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointBackgroundColor: '#1a1a1a'
+          },
+          {
+            label: '누적 원금',
+            data: sim.yearlyPrincipal,
+            borderColor: '#999',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.1,
+            borderWidth: 1,
+            pointRadius: 0,
+            pointHoverRadius: 4
+          },
+          {
+            label: '실질 가치',
+            data: realSeries,
+            borderColor: '#2d6a4f',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.25,
+            borderWidth: 1.2,
+            borderDash: [4, 3],
+            pointRadius: 0,
+            pointHoverRadius: 4
+          },
+          {
+            label: '목표 금액',
+            data: goalLine,
+            borderColor: '#c8754d',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0,
+            borderWidth: 1,
+            borderDash: [2, 3],
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1a1a',
+            titleFont: { family: 'Inter, Noto Sans KR', size: 12, weight: '500' },
+            bodyFont: { family: 'Inter, Noto Sans KR', size: 11 },
+            padding: 10,
+            cornerRadius: 2,
+            displayColors: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            callbacks: {
+              label: (ctx) => '  ' + ctx.dataset.label + '  ' + fmtKRW(ctx.parsed.y)
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            border: { color: '#ececec' },
+            ticks: {
+              font: { family: 'Inter', size: 10 },
+              color: '#888',
+              maxRotation: 0,
+              autoSkipPadding: 20
+            }
+          },
+          y: {
+            grid: { color: '#f0f0f0', lineWidth: 0.5 },
+            border: { display: false },
+            ticks: {
+              font: { family: 'Inter', size: 10 },
+              color: '#888',
+              callback: (v) => fmtAxis(v)
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function bindPair(rangeId, numId, valueId, key, unit) {
+    const r = document.getElementById(rangeId);
+    const n = document.getElementById(numId);
+    const v = document.getElementById(valueId);
+    function setVal(val, source) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return;
+      state[key] = num;
+      if (source !== 'range') r.value = num;
+      if (source !== 'num') n.value = num;
+      if (v) {
+        if (unit === 'float1') v.textContent = num.toFixed(1);
+        else v.textContent = num.toLocaleString();
+      }
+      update();
+    }
+    r.addEventListener('input', (e) => setVal(e.target.value, 'range'));
+    n.addEventListener('input', (e) => setVal(e.target.value, 'num'));
+    n.addEventListener('change', (e) => setVal(e.target.value, 'num'));
+  }
+
+  bindPair('r-age-now', 'n-age-now', 'v-age-now', 'ageNow');
+  bindPair('r-age-ret', 'n-age-ret', 'v-age-ret', 'ageRet');
+  bindPair('r-goal', 'n-goal', 'v-goal', 'goal');
+  bindPair('r-init', 'n-init', 'v-init', 'init');
+  bindPair('r-monthly', 'n-monthly', 'v-monthly', 'monthly');
+  bindPair('r-rate', 'n-rate', 'v-rate', 'rate', 'float1');
+  bindPair('r-infl', 'n-infl', 'v-infl', 'infl', 'float1');
+
+  document.getElementById('t-goal-real').addEventListener('click', () => {
+    state.goalMode = 'real';
+    document.getElementById('t-goal-real').classList.add('active');
+    document.getElementById('t-goal-nominal').classList.remove('active');
+    update();
+  });
+  document.getElementById('t-goal-nominal').addEventListener('click', () => {
+    state.goalMode = 'nominal';
+    document.getElementById('t-goal-nominal').classList.add('active');
+    document.getElementById('t-goal-real').classList.remove('active');
+    update();
+  });
+
+  document.getElementById('btn-solve-monthly').addEventListener('click', () => {
+    const years = state.ageRet - state.ageNow;
+    if (years <= 0) return;
+    const initWon = state.init * 1e4;
+    const goalNominal = getGoalNominal();
+    const need = solveMonthly(initWon, goalNominal, state.rate, years);
+    if (need === null || need < 0) return;
+    const needManwon = Math.max(0, Math.round(need / 1e4));
+    state.monthly = needManwon;
+    document.getElementById('r-monthly').value = needManwon;
+    document.getElementById('n-monthly').value = needManwon;
+    document.getElementById('v-monthly').textContent = needManwon.toLocaleString();
+    update();
+  });
+
+  document.getElementById('btn-solve-rate').addEventListener('click', () => {
+    const years = state.ageRet - state.ageNow;
+    if (years <= 0) return;
+    const initWon = state.init * 1e4;
+    const monthlyWon = state.monthly * 1e4;
+    const goalNominal = getGoalNominal();
+    const need = solveRate(initWon, monthlyWon, goalNominal, years);
+    const rounded = Math.round(need * 10) / 10;
+    state.rate = rounded;
+    document.getElementById('r-rate').value = rounded;
+    document.getElementById('n-rate').value = rounded;
+    document.getElementById('v-rate').textContent = rounded.toFixed(1);
+    update();
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    Object.assign(state, defaults);
+    document.getElementById('r-age-now').value = state.ageNow; document.getElementById('n-age-now').value = state.ageNow; document.getElementById('v-age-now').textContent = state.ageNow;
+    document.getElementById('r-age-ret').value = state.ageRet; document.getElementById('n-age-ret').value = state.ageRet; document.getElementById('v-age-ret').textContent = state.ageRet;
+    document.getElementById('r-goal').value = state.goal; document.getElementById('n-goal').value = state.goal; document.getElementById('v-goal').textContent = state.goal;
+    document.getElementById('r-init').value = state.init; document.getElementById('n-init').value = state.init; document.getElementById('v-init').textContent = state.init.toLocaleString();
+    document.getElementById('r-monthly').value = state.monthly; document.getElementById('n-monthly').value = state.monthly; document.getElementById('v-monthly').textContent = state.monthly;
+    document.getElementById('r-rate').value = state.rate; document.getElementById('n-rate').value = state.rate; document.getElementById('v-rate').textContent = state.rate.toFixed(1);
+    document.getElementById('r-infl').value = state.infl; document.getElementById('n-infl').value = state.infl; document.getElementById('v-infl').textContent = state.infl.toFixed(1);
+    state.goalMode = 'real';
+    document.getElementById('t-goal-real').classList.add('active');
+    document.getElementById('t-goal-nominal').classList.remove('active');
+    update();
+  });
+
+  document.getElementById('v-init').textContent = state.init.toLocaleString();
+  update();
+})();
+</script>
+
+</body>
+</html>
