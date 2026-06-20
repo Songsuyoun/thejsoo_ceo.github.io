@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>후쿠오카 가족여행 🗾</title>
+<style>
+  :root{
+    --ink:#2b2b2b;
+    --sub:#8a8a8a;
+    --line:#e8e4dd;
+    --paper:#faf7f2;
+    --card:#ffffff;
+    --accent:#c8513a;      /* 단풍빛 코랄 */
+    --accent-soft:#fbeae5;
+    --sky:#3d6a8f;          /* 비행기/이동 */
+    --sky-soft:#e7eef4;
+    --food:#b07a1e;         /* 식당 */
+    --food-soft:#f6eeda;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.6;
+    padding:0 0 60px;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 18px;}
+
+  /* ===== HERO ===== */
+  header{
+    text-align:center;
+    padding:48px 18px 30px;
+  }
+  header .eyebrow{
+    font-size:13px;letter-spacing:5px;color:var(--accent);
+    font-weight:700;margin-bottom:14px;
+  }
+  header h1{
+    font-size:clamp(30px,7vw,46px);
+    font-weight:800;letter-spacing:-1px;line-height:1.15;
+  }
+  header h1 .jp{display:block;font-size:clamp(15px,3.6vw,20px);color:var(--sub);font-weight:600;letter-spacing:2px;margin-top:6px;}
+  header .meta{
+    margin-top:18px;display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;
+  }
+  header .meta span{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:999px;padding:6px 14px;font-size:13px;color:var(--sub);font-weight:600;
+  }
+
+  /* ===== 탭 ===== */
+  nav.tabs{
+    position:sticky;top:0;z-index:20;
+    background:var(--paper);
+    display:flex;gap:6px;overflow-x:auto;
+    padding:12px 18px;border-bottom:1px solid var(--line);
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--card);
+    color:var(--sub);font-weight:700;font-size:14px;
+    padding:9px 16px;border-radius:999px;cursor:pointer;
+    font-family:inherit;transition:.15s;white-space:nowrap;
+  }
+  nav.tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  section{display:none;padding-top:26px;}
+  section.show{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  h2.sec{font-size:20px;font-weight:800;margin-bottom:4px;letter-spacing:-.5px;}
+  p.sec-desc{color:var(--sub);font-size:14px;margin-bottom:18px;}
+
+  /* ===== 일정 카드 ===== */
+  .day{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    margin-bottom:18px;overflow:hidden;
+  }
+  .day-head{
+    display:flex;align-items:center;gap:12px;
+    padding:16px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(0deg,#fff, #fffdf9);
+  }
+  .day-num{
+    flex:0 0 auto;width:42px;height:42px;border-radius:12px;
+    background:var(--accent-soft);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:15px;line-height:1.1;text-align:center;
+  }
+  .day-head .t{font-weight:800;font-size:16px;}
+  .day-head .d{color:var(--sub);font-size:13px;font-weight:600;}
+
+  table{width:100%;border-collapse:collapse;}
+  th,td{text-align:left;padding:11px 14px;font-size:14px;vertical-align:top;border-top:1px solid var(--line);}
+  th{background:#fcfaf6;color:var(--sub);font-size:12px;font-weight:700;letter-spacing:.5px;border-top:none;}
+  td.time{white-space:nowrap;font-weight:700;color:var(--accent);width:74px;}
+  td[contenteditable]{outline:none;}
+  td[contenteditable]:focus{background:var(--accent-soft);border-radius:6px;}
+  tr.add td{text-align:center;color:var(--sky);cursor:pointer;font-weight:700;background:#fbfbfb;}
+  tr.add td:hover{background:var(--sky-soft);}
+  .row-del{color:var(--sub);cursor:pointer;font-size:12px;float:right;opacity:.4;}
+  .row-del:hover{opacity:1;color:var(--accent);}
+
+  .hint{font-size:12.5px;color:var(--sub);margin:-6px 0 16px;}
+  .hint b{color:var(--accent);}
+
+  /* ===== 식당 카드 ===== */
+  .food-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+  .food-card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+  }
+  .food-card .badge{display:inline-block;background:var(--food-soft);color:var(--food);font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;margin-bottom:8px;}
+  .food-card h4{font-size:15px;font-weight:800;}
+  .food-card [contenteditable]{outline:none;font-size:13px;color:var(--sub);min-height:20px;}
+  .food-card [contenteditable]:focus{background:var(--food-soft);border-radius:6px;}
+
+  /* ===== 교통 안내 ===== */
+  .route{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;margin-bottom:16px;
+  }
+  .route h3{font-size:16px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .route h3 .ic{width:30px;height:30px;border-radius:9px;background:var(--sky-soft);color:var(--sky);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .steps{counter-reset:step;list-style:none;}
+  .steps li{
+    position:relative;padding:0 0 18px 44px;
+  }
+  .steps li:last-child{padding-bottom:0;}
+  .steps li::before{
+    counter-increment:step;content:counter(step);
+    position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;
+    background:var(--sky);color:#fff;font-weight:800;font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .steps li::after{
+    content:'';position:absolute;left:13.5px;top:30px;bottom:2px;width:1.5px;background:var(--line);
+  }
+  .steps li:last-child::after{display:none;}
+  .steps .st-t{font-weight:700;font-size:14.5px;}
+  .steps .st-d{font-size:13.5px;color:var(--sub);margin-top:2px;}
+  .tag{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:5px;}
+  .tag.time{background:var(--accent-soft);color:var(--accent);}
+  .tag.cost{background:#e6f0e8;color:#3f7d54;}
+  .callout{
+    background:#fff8e9;border:1px solid #f0e2bd;border-radius:12px;
+    padding:13px 15px;font-size:13.5px;color:#7a6320;margin-top:14px;
+  }
+  .callout b{color:#a3791b;}
+
+  /* ===== 체크리스트 ===== */
+  .check-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+  .check-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;}
+  .check-box h4{font-size:14px;font-weight:800;margin-bottom:10px;color:var(--accent);}
+  .check-item{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:14px;}
+  .check-item input{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex:0 0 auto;}
+  .check-item label{cursor:pointer;flex:1;}
+  .check-item input:checked + label{color:var(--sub);text-decoration:line-through;}
+
+  /* ===== 비용 정산 ===== */
+  .money-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+  .money-card table td.amt{text-align:right;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .money-card td[contenteditable]:focus{background:var(--accent-soft);border-radius:6px;}
+  .total-row td{border-top:2px solid var(--ink);font-weight:800;font-size:16px;padding-top:14px;}
+  .per-row td{color:var(--sky);font-weight:800;}
+  .add-money{text-align:center;color:var(--sky);cursor:pointer;font-weight:700;padding:10px;}
+  .add-money:hover{color:var(--accent);}
+
+  footer{text-align:center;color:var(--sub);font-size:12.5px;padding:30px 18px 0;}
+
+  @media(max-width:520px){
+    th:nth-child(4),td:nth-child(4){display:none;} /* 좁은 화면 메모 숨김 */
+    td.time{width:62px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">FAMILY TRIP · 2026</div>
+  <h1>후쿠오카 가족여행<span class="jp">福岡 ・ ふくおか</span></h1>
+  <div class="meta">
+    <span>🗓️ 6/26(금) ~ 6/28(일) · 2박3일</span>
+    <span>✈️ 김해 → 후쿠오카</span>
+    <span>💑 27일은 부부 단독 일정</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="active" data-tab="sched">📅 일정표</button>
+  <button data-tab="route">🚆 가는 법</button>
+  <button data-tab="food">🍜 맛집</button>
+  <button data-tab="check">🧳 준비물</button>
+  <button data-tab="money">💰 비용</button>
+</nav>
+
+<div class="wrap">
+
+  <!-- ====== 일정표 ====== -->
+  <section id="sched" class="show">
+    <h2 class="sec">시간대별 일정</h2>
+    <p class="sec-desc">셀을 눌러서 바로 수정할 수 있어요. 줄 추가는 맨 아래 <b>+ 일정 추가</b>를 누르세요.</p>
+    <p class="hint">💡 <b>밑줄 친 장소명 📍을 누르면 구글지도로 바로 연결</b>돼요. 메모에 <b>이동 수단·소요시간·요금</b>까지 적어뒀어요. 27일은 부부 단독 데이트 코스입니다. (각자 휴대폰으로 열어 보세요)</p>
+    <div id="days"></div>
+    <div style="text-align:center;margin-top:6px;">
+      <button onclick="addDay()" style="background:var(--card);border:1px dashed var(--accent);color:var(--accent);font-weight:700;padding:11px 20px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:14px;">+ 날짜(DAY) 추가</button>
+    </div>
+  </section>
+
+  <!-- ====== 가는 법 ====== -->
+  <section id="route">
+    <h2 class="sec">김해공항 → 후쿠오카 숙소 가는 법</h2>
+    <p class="sec-desc">비행기 + 무료 셔틀버스 + 지하철 순서예요. 아이들과 함께라 여유 있게 잡았습니다.</p>
+
+    <div class="route">
+      <h3><span class="ic">✈️</span> 1단계 · 김해공항에서 비행기 타기</h3>
+      <ul class="steps">
+        <li>
+          <div class="st-t">국제선 청사로 출발 (탑승 2시간 전 도착 권장)</div>
+          <div class="st-d">가족 단체 + 아이들이라 체크인·수속에 시간이 걸려요. 넉넉히 가는 걸 추천해요.</div>
+        </li>
+        <li>
+          <div class="st-t">김해(PUS) → 후쿠오카(FUK) 직항</div>
+          <div class="st-d"><span class="tag time">비행 약 55분~1시간</span> 에어부산·제주항공·티웨이·이스타·진에어 등 직항 운항. 김해는 항공편이 많은 편이에요.</div>
+        </li>
+        <li>
+          <div class="st-t">후쿠오카 공항 도착 → 입국심사</div>
+          <div class="st-d">국제선 터미널 1층 입국장으로 나옵니다. 단체라 심사 줄이 길 수 있어요.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="route">
+      <h3><span class="ic">🚌</span> 2단계 · 무료 셔틀버스로 지하철역까지</h3>
+      <ul class="steps">
+        <li>
+          <div class="st-t">⚠️ 지하철역은 '국내선' 쪽에 있어요</div>
+          <div class="st-d">국제선 터미널엔 지하철역이 없어요. 그래서 먼저 무료 셔틀버스를 꼭 타야 합니다.</div>
+        </li>
+        <li>
+          <div class="st-t">입국장 나와서 오른편 '무료 셔틀버스' 표지판 따라가기</div>
+          <div class="st-d">1번 출구 쪽에 'Free Shuttle Bus / 国内線' 안내판이 있어요. 그린·블루색 순환버스를 탑니다.</div>
+        </li>
+        <li>
+          <div class="st-t">국내선 터미널까지 이동</div>
+          <div class="st-d"><span class="tag time">약 10분</span><span class="tag cost">무료</span> 배차 약 8분 간격. 하나 놓쳐도 금방 와요. 내려서 에스컬레이터로 지하 → 후쿠오카공항역.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="route">
+      <h3><span class="ic">🚇</span> 3단계 · 지하철로 시내(하카타·텐진)</h3>
+      <ul class="steps">
+        <li>
+          <div class="st-t">후쿠오카공항역에서 발권</div>
+          <div class="st-d">발권기 화면에서 <b>한국어 선택</b> 가능. 행선지 요금 누르고 1회권 구매하면 돼요. 종점역이라 방향 헷갈릴 일 없어요.</div>
+        </li>
+        <li>
+          <div class="st-t">하카타역 (2정거장)</div>
+          <div class="st-d"><span class="tag time">약 5분</span><span class="tag cost">260엔</span> 공항선. JR·신칸센 환승, 캐널시티 등 중심지.</div>
+        </li>
+        <li>
+          <div class="st-t">텐진역</div>
+          <div class="st-d"><span class="tag time">약 11분</span><span class="tag cost">260엔</span> 쇼핑·번화가 중심. 두 곳 다 같은 공항선 한 번에 갑니다.</div>
+        </li>
+        <li>
+          <div class="st-t">🏨 나카스카와바타역 (호텔 도착) · 5정거장</div>
+          <div class="st-d"><span class="tag time">약 8분</span><span class="tag cost">260엔</span> 우리 숙소 ANA 크라운 플라자가 여기! 하카타 다음 역. 내려서 도보 3~5분.</div>
+        </li>
+      </ul>
+      <div class="callout">
+        🧳 <b>팁 (가족 단체 · 아이 동반)</b> · 캐리어가 많거나 아이들이 지치면 <b>택시</b>도 좋아요. 공항 → 하카타역 약 1,500엔, 텐진 약 2,000엔 수준(택시 1대 기준). 일행을 2~3대로 나누면 편합니다. · <b>실제 소요시간</b>은 셔틀 대기까지 합쳐 공항→하카타 총 20~25분으로 잡으세요.
+      </div>
+      <div class="callout" style="background:#eef4ef;border-color:#cfe0d4;color:#3f6b4f;">
+        💳 <b>교통카드 · 1일권</b> · 지하철 기본요금 210엔, 1일권 640엔(3번만 타도 이득). <b>27일 부부 데이트는 지하철을 4번 이상 타니 1일권 강력 추천</b>(역 발매기 현금 구매). 비접촉(컨택리스) 해외카드가 있으면 그냥 찍고 타도 하루 640엔에서 자동 상한 적용돼요. 첫날 숙소 갈 때처럼 한 번만 탈 땐 1회권으로 충분.
+      </div>
+    </div>
+
+    <div class="route" style="background:var(--accent-soft);border-color:#f0cfc6;">
+      <h3 style="color:var(--accent);"><span class="ic" style="background:#fff;color:var(--accent);">🏨</span> 숙소까지 마지막 구간 (작성 칸)</h3>
+      <p style="font-size:14px;color:#9a5446;margin-bottom:10px;">숙소 정해지면 마지막 길 안내를 여기 적어두세요. 가족들이 길 잃지 않게요!</p>
+      <div contenteditable="true" style="background:#fff;border:1px dashed #e0b3a8;border-radius:10px;padding:14px;min-height:80px;font-size:14px;outline:none;">🏨 <b>ANA 크라운 플라자 호텔 후쿠오카</b><br>지하철 공항선 <b>나카스카와바타역</b> 하차 → 도보 3~5분<br>체크인 15:00 / 캐널시티·나카스 야타이 도보권<br>📍 지도: maps.app.goo.gl/EnhCHjhmtxZ6gyqT6</div>
+    </div>
+  </section>
+
+  <!-- ====== 맛집 ====== -->
+  <section id="food">
+    <h2 class="sec">가보고 싶은 맛집 메모</h2>
+    <p class="sec-desc">이번 여행에 갈 식당이에요. <b>📍 구글지도 열기</b>를 누르면 바로 길찾기가 돼요. ✅는 예약 완료된 곳입니다.</p>
+    <div class="food-grid" id="foodGrid"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <button onclick="addFood()" style="background:var(--card);border:1px dashed var(--food);color:var(--food);font-weight:700;padding:11px 20px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:14px;">+ 맛집 카드 추가</button>
+    </div>
+  </section>
+
+  <!-- ====== 준비물 ====== -->
+  <section id="check">
+    <h2 class="sec">준비물 체크리스트</h2>
+    <p class="sec-desc">체크하면 줄이 그어져요. 항목은 눌러서 수정할 수 있어요.</p>
+    <div class="check-cols" id="checkCols"></div>
+  </section>
+
+  <!-- ====== 비용 ====== -->
+  <section id="money">
+    <h2 class="sec">1인 예상 식비 · 경비</h2>
+    <p class="sec-desc">항공권·숙소 제외, <b>식당+교통 1인 예상 금액</b>이에요. 실제 주문에 따라 달라지니 대략 참고용! 금액 칸을 눌러 수정할 수 있어요.</p>
+    <div class="money-card">
+      <table id="moneyTable">
+        <thead><tr><th>항목</th><th style="text-align:right;">1인 예상 (원)</th></tr></thead>
+        <tbody id="moneyBody"></tbody>
+        <tfoot>
+          <tr class="total-row"><td>1인 합계 (식비+교통)</td><td class="amt" id="moneyTotal">0</td></tr>
+          <tr class="per-row"><td><span id="peopleEdit" contenteditable="true" style="outline:none;border-bottom:1px solid var(--sky);padding:0 3px;">4</span>명 가족 합계</td><td class="amt" id="moneyPer">0</td></tr>
+        </tfoot>
+      </table>
+      <div class="add-money" onclick="addMoney()">+ 항목 추가</div>
+    </div>
+    <p class="hint" style="margin-top:14px;">💡 가족 인원 수를 위에서 고치면 '가족 합계'가 자동 계산돼요. 환율 메모: 100엔 ≈ <span contenteditable="true" style="outline:none;background:#fff;border-bottom:1px solid var(--accent);padding:0 4px;">___</span>원 · 식당은 야키니쿠/모츠나베가 비싼 편, 노포·야타이는 현금만 받기도 해요</p>
+  </section>
+
+</div>
+
+<footer>🤍 즐거운 후쿠오카 여행 되세요 · 일정은 각자 휴대폰으로 열어 확인하세요</footer>
+
+<script>
+// (인원수는 비용 탭에서 직접 수정)
+
+/* ---------- 탭 전환 ---------- */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('show'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('show');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+
+/* ---------- 일정표 ---------- */
+const daysWrap=document.getElementById('days');
+let dayCount=0;
+function addDay(date,title,rows){
+  dayCount++;
+  const n=dayCount;
+  const div=document.createElement('div');
+  div.className='day';
+  div.innerHTML=`
+    <div class="day-head">
+      <div class="day-num">DAY<br>${n}</div>
+      <div>
+        <div class="t" contenteditable="true">${title||'일정 제목'}</div>
+        <div class="d" contenteditable="true">${date||'6월 ○일 (○)'}</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>시간</th><th>장소 / 활동</th><th>메모</th></tr></thead>
+      <tbody></tbody>
+    </table>`;
+  daysWrap.appendChild(div);
+  const tb=div.querySelector('tbody');
+  if(rows&&rows.length){ rows.forEach(r=>addRow(tb,null,r)); }
+  else { addRow(tb); }
+  const addTr=document.createElement('tr');
+  addTr.className='add';
+  addTr.innerHTML=`<td colspan="3">+ 일정 추가</td>`;
+  addTr.querySelector('td').onclick=()=>addRow(tb,addTr);
+  tb.appendChild(addTr);
+}
+function addRow(tbody,beforeEl,data){
+  const d=data||{};
+  const tr=document.createElement('tr');
+  let placeCell;
+  if(d.gmap){
+    const url=d.gmap.startsWith('http')?d.gmap:('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(d.gmap));
+    placeCell=`<td><a href="${url}" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1.5px solid var(--sky);">${d.place} <span style="font-size:12px;">📍</span></a></td>`;
+  } else {
+    placeCell=`<td contenteditable="true">${d.place||'활동 입력'}</td>`;
+  }
+  tr.innerHTML=`
+    <td class="time" contenteditable="true">${d.time||'00:00'}</td>
+    ${placeCell}
+    <td contenteditable="true">${d.memo||'메모'}<span class="row-del" title="삭제">✕</span></td>`;
+  tr.querySelector('.row-del').onclick=(e)=>{e.stopPropagation();tr.remove();};
+  if(beforeEl) tbody.insertBefore(tr,beforeEl); else tbody.appendChild(tr);
+}
+
+/* 링크 헬퍼: 메모 안에 지도/예약 버튼 */
+function mapLink(url){return `<a href="${url}" target="_blank" style="display:inline-block;background:#e7eef4;color:#3d6a8f;font-weight:700;font-size:12px;padding:2px 8px;border-radius:6px;text-decoration:none;margin-top:2px;">📍 지도</a>`;}
+function resvTag(t){return `<span style="display:inline-block;background:#e6f0e8;color:#3f7d54;font-weight:700;font-size:11px;padding:2px 7px;border-radius:6px;margin-right:4px;">✅ ${t} 예약완료</span>`;}
+
+/* ===== DAY 1 · 6/26 (금) 도착 ===== */
+addDay('6월 26일 (금) · 도착','도착 & 텐진 · 나카스 첫날',[
+  {time:'09:55',place:'✈️ 후쿠오카 공항 도착 (국제선)',gmap:'후쿠오카 공항 국제선',memo:'입국심사 → 짐 찾기. 단체+아이라 30~40분 잡기'},
+  {time:'10:40',place:'🚌 무료 셔틀 → 국내선 터미널',memo:'🚌 국제선엔 지하철역 없음! 입국장 나와 <b>오른편 무료 셔틀버스</b>(国内線행) 탑승 → 약 10분(배차 8분)·무료 → 국내선 도착 후 지하 <b>후쿠오카공항역</b>'},
+  {time:'11:10',place:'🚇 지하철 → 나카스카와바타역',gmap:'나카스카와바타역',memo:'🚇 <b>후쿠오카공항역</b>(시영 지하철 공항선·주황) 메이노하마/텐진 방면 승차 → <b>나카스카와바타역</b> 하차(5정거장·약8분·260엔). 종점 출발이라 방향 헷갈릴 일 없음. 발권기 한국어○'},
+  {time:'11:30',place:'🏨 ANA 크라운 플라자 호텔 후쿠오카',gmap:'https://maps.app.goo.gl/EnhCHjhmtxZ6gyqT6',memo:'🚶 나카스카와바타역 <b>1번 출구</b>에서 도보 3~5분. 체크인 전이면 프런트에 캐리어 맡기고 출발! (체크인 15:00)'},
+  {time:'13:45',place:'🍽️ 점심 · 히키니쿠토코메 함바그',gmap:'https://maps.app.goo.gl/yJ3PEkbdurSgW26R8',memo:resvTag('13:45')+'하카타역 인근.<br>🚇 <b>나카스카와바타역</b>(시영 지하철 공항선·주황) 후쿠오카공항 방면 → <b>하카타역</b> 하차(1정거장·2분·210엔) → 동5번 출구. 또는 호텔서 택시 5분(약 1,000엔)'},
+  {time:'15:00',place:'🛍️ 텐진 · 텐진 지하상가',gmap:'텐진 지하상가 후쿠오카',memo:'후쿠오카 최대 번화가, 지하상가 에어컨○ 아이 더위 피하기 좋음.<br>🚇 <b>하카타역</b>(지하철 공항선·주황) 메이노하마 방면 → <b>텐진역</b> 하차(2정거장·5분·210엔) → 지하상가 바로 연결'},
+  {time:'16:30',place:'👗 다이묘 골목 산책',gmap:'다이묘 후쿠오카',memo:'🚶 텐진역 <b>2번 출구</b>에서 도보 5분. 감성 편집숍·카페 거리, 살살 걷기'},
+  {time:'18:30',place:'🥩 저녁 · 야키니쿠 하나비',gmap:'https://maps.app.goo.gl/5kNbhmoEUoNzfLNd7',memo:'와규 야키니쿠, 가족 모두 OK.<br>🚇 <b>텐진역</b>(지하철 공항선·주황) 후쿠오카공항 방면 → <b>나카스카와바타역</b> 하차(1정거장·2분·210엔) → 1번 출구. 가게는 나카스/하카타 방면'},
+  {time:'20:30',place:'🛒 돈키호테 나카스점',gmap:'돈키호테 나카스점 후쿠오카',memo:'🚶 야키니쿠·호텔에서 도보권. 간식·약·기념품, 심야까지 영업'},
+  {time:'21:30',place:'🏮 나카스강 포장마차(야타이)',gmap:'나카스 야타이 후쿠오카',memo:'🚶 돈키·호텔 바로 옆 강변(도보 3~5분). 야경+야타이. 아이 지치면 호텔로, 어른만 가볍게도 OK'},
+]);
+
+/* ===== DAY 2 · 6/27 (토) — 부부 / 아이 분리 ===== */
+addDay('6월 27일 (토) · 부부 단독 데이트','② 사찰 산책 → 오호리 → 카페거리',[
+  {time:'10:00',place:'🏨 호텔 출발 (도보 시작)',gmap:'https://maps.app.goo.gl/EnhCHjhmtxZ6gyqT6',memo:'🚶 아침 사찰 2곳은 호텔 도보권이라 지하철 없이 걸어서 OK. 편한 신발!'},
+  {time:'10:15',place:'⛩️ 쇼후쿠지 (聖福寺)',gmap:'쇼후쿠지 후쿠오카 hakata',memo:'🚶 호텔에서 도보 8~10분. 일본 최초 선종 사찰, 조용한 경내. 무료·한적해 아침에 딱'},
+  {time:'11:00',place:'⛩️ 스미요시 신사',gmap:'스미요시 신사 후쿠오카 hakata',memo:'🚶 쇼후쿠지서 도보 15~18분(하카타 구사가 구경하며). 1800년 역사·일본 3대 스미요시. 옆에 라쿠스이엔 정원'},
+  {time:'12:00',place:'🍽️ 점심 · 마코토',gmap:'https://maps.app.goo.gl/BCiXDaNtJsV176Qu5',memo:'🚶 스미요시 신사서 도보 8~10분(하카타역 방향). 캐주얼 일식'},
+  {time:'13:30',place:'🚇 하카타역 → 오호리공원역',gmap:'오호리공원역',memo:'🚇 마코토→<b>하카타역</b> 도보 8분 → 지하철 공항선(주황) 메이노하마 방면 → <b>오호리공원역</b> 하차(5정거장·약9분·260엔) → <b>3번 출구</b>'},
+  {time:'13:50',place:'🌳 오호리 공원 + 후쿠오카성 터',gmap:'오호리 공원 후쿠오카',memo:'🚶 오호리공원역 3번 출구 도보 3분. 호수 산책로·정원, 옆에 후쿠오카성(마이즈루 공원). 벤치에서 쉬기 좋음'},
+  {time:'15:30',place:'🚇 오호리공원역 → 야쿠인역',gmap:'야쿠인역',memo:'🚇 <b>오호리공원역</b>(공항선·주황) 후쿠오카공항 방면 → <b>텐진역</b> 하차(4분·210엔) → 같은 역에서 <b>나나쿠마선(초록)</b> 환승 → <b>야쿠인역</b> 1정거장. 총 12~15분·260엔. (도보 산책 좋아하면 텐진서 야쿠인까지 15분)'},
+  {time:'15:50',place:'☕ 야쿠인 · 이마이즈미 카페거리',gmap:'야쿠인 후쿠오카 카페',memo:'🚶 야쿠인역 일대 감성 카페·디저트 밀집. 부부끼리 커피+디저트 여유롭게'},
+  {time:'18:00',place:'🍶 자유시간 / 호텔 휴식',memo:'🚇 야쿠인→호텔: <b>야쿠인역</b>(나나쿠마선) → <b>텐진역</b> 환승 → 공항선 <b>나카스카와바타역</b>(총 약15분·260엔). 저녁 예약까지 여유'},
+  {time:'21:15',place:'🍽️ 저녁 · 친푼칸푼 하카타점',gmap:'https://maps.app.goo.gl/KD9A5ac9r5UsoC4P8',memo:resvTag('21:15')+'🚶 호텔서 도보 10분 또는 택시 5분(약 1,000엔). 나카스/스미요시 방면, 늦은 저녁 예약'},
+]);
+
+/* ===== DAY 3 · 6/28 (일) 출국 ===== */
+addDay('6월 28일 (일) · 출국','③ 마지막 쇼핑 & 귀국',[
+  {time:'09:30',place:'🧳 체크아웃 / 짐 프런트 보관',gmap:'https://maps.app.goo.gl/EnhCHjhmtxZ6gyqT6',memo:'체크아웃 후 캐리어는 프런트에 맡기고 가볍게 마지막 일정'},
+  {time:'10:00',place:'🎡 캐널시티 하카타',gmap:'캐널시티 하카타',memo:'🚶 호텔에서 도보 5~7분! 분수쇼+쇼핑몰. 못 산 기념품·간식 마무리, 아이 선물 챙기기'},
+  {time:'12:30',place:'🍲 점심 · 하카타 모츠나베 마에다야 총본점',gmap:'https://maps.app.goo.gl/SaHbzD1pKZqDhjAF6',memo:'🚶 캐널시티서 도보 12분 또는 택시 5분(약 1,000엔). 후쿠오카 명물 모츠나베, 하카타역 동쪽'},
+  {time:'13:45',place:'🏨 호텔서 캐리어 픽업',memo:'🚶/🚕 식당↔호텔 도보 10분 또는 택시 5분. 점심 후 호텔 들러 짐 찾기'},
+  {time:'14:15',place:'🚇 호텔 → 후쿠오카공항역',gmap:'후쿠오카 공항 국제선',memo:'🚇 <b>나카스카와바타역</b>(지하철 공항선·주황) 후쿠오카공항 방면 → <b>후쿠오카공항역</b> 하차(5정거장·약8분·260엔) → 지하서 국내선. 🚌 국내선→국제선 무료 셔틀 10분'},
+  {time:'14:55',place:'✈️ 공항 도착 · 체크인/면세',gmap:'후쿠오카 공항 국제선',memo:'단체+아이라 일찍. 출발 2시간 전 권장, 면세 쇼핑 여유'},
+  {time:'16:55',place:'✈️ 후쿠오카 → 김해 출발',memo:'탑승. 즐거운 여행 끝! 🤍'},
+]);
+
+/* ---------- 맛집 ---------- */
+const foodGrid=document.getElementById('foodGrid');
+function addFood(d){
+  d=d||{};
+  const c=document.createElement('div');
+  c.className='food-card';
+  const link=d.url?`<a href="${d.url}" target="_blank" style="display:inline-block;background:var(--sky-soft);color:var(--sky);font-weight:700;font-size:12px;padding:3px 9px;border-radius:7px;text-decoration:none;margin-top:8px;">📍 구글지도 열기</a>`:'';
+  c.innerHTML=`
+    <span class="badge" contenteditable="true">${d.cat||'카테고리'}</span>
+    <span class="row-del" style="float:right" title="삭제">✕</span>
+    <h4 contenteditable="true">${d.name||'가게 이름'}</h4>
+    <div contenteditable="true" data-ph="메뉴 / 위치 / 영업시간 메모">${d.memo||'메뉴 · 위치 메모'}</div>
+    ${link}`;
+  c.querySelector('.row-del').onclick=()=>c.remove();
+  foodGrid.appendChild(c);
+}
+const foodList=[
+  {cat:'🍔 26일 점심 ✅예약',name:'히키니쿠토코메 함바그',memo:'다진고기+갓지은 밥 함바그 전문. 13:45 예약완료. 하카타역 인근.',url:'https://maps.app.goo.gl/yJ3PEkbdurSgW26R8'},
+  {cat:'🥩 26일 저녁',name:'야키니쿠 하나비',memo:'야키니쿠(일본식 고기구이). 가족 모두 좋아할 메뉴. 나카스/하카타 방면.',url:'https://maps.app.goo.gl/5kNbhmoEUoNzfLNd7'},
+  {cat:'🍱 27일 점심 (부부)',name:'마코토',memo:'캐주얼 일식당. 하카타역 인근. 부부 데이트 점심.',url:'https://maps.app.goo.gl/BCiXDaNtJsV176Qu5'},
+  {cat:'🍶 27일 저녁 ✅예약 (부부)',name:'친푼칸푼 하카타점',memo:'21:15 예약완료. 늦은 저녁. 나카스/스미요시 방면.',url:'https://maps.app.goo.gl/KD9A5ac9r5UsoC4P8'},
+  {cat:'🍲 28일 점심',name:'하카타 모츠나베 마에다야 총본점',memo:'후쿠오카 명물 모츠나베(곱창전골). 출국 전 마지막 식사. 하카타역 동쪽.',url:'https://maps.app.goo.gl/SaHbzD1pKZqDhjAF6'},
+];
+foodList.forEach(addFood);
+
+/* ---------- 준비물 ---------- */
+const checkData={
+  '📄 서류 / 필수':['여권 (유효기간 6개월↑)','항공권 / e티켓','숙소 예약 확인서','여행자 보험','일본 입국 QR / Visit Japan Web'],
+  '💴 돈 / 통신':['엔화 환전','신용/체크카드','교통카드 or 1일권','유심 / 이심 / 와이파이 도시락','보조 배터리'],
+  '👶 아이 / 가족':['상비약 (해열제·멀미약·밴드)','아이 간식 / 물티슈','유모차 / 아기띠','휴대용 충전 케이블','우산 / 양산 (6월 장마)'],
+  '🧴 생활 / 기타':['세면도구 / 칫솔','속옷·양말 여유분','얇은 겉옷 (냉방 대비)','지퍼백 / 에코백','멀티 어댑터(일본 110V)']
+};
+const checkCols=document.getElementById('checkCols');
+let ck=0;
+for(const[title,items]of Object.entries(checkData)){
+  const box=document.createElement('div');
+  box.className='check-box';
+  box.innerHTML=`<h4>${title}</h4>`;
+  items.forEach(it=>{
+    ck++;
+    const row=document.createElement('div');
+    row.className='check-item';
+    row.innerHTML=`<input type="checkbox" id="ck${ck}"><label for="ck${ck}" contenteditable="true">${it}</label>`;
+    box.appendChild(row);
+  });
+  const add=document.createElement('div');
+  add.style.cssText='color:var(--sky);font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;';
+  add.textContent='+ 항목 추가';
+  add.onclick=()=>{
+    ck++;
+    const row=document.createElement('div');
+    row.className='check-item';
+    row.innerHTML=`<input type="checkbox" id="ck${ck}"><label for="ck${ck}" contenteditable="true">새 항목</label>`;
+    box.insertBefore(row,add);
+  };
+  box.appendChild(add);
+  checkCols.appendChild(box);
+}
+
+/* ---------- 비용 ---------- */
+const moneyBody=document.getElementById('moneyBody');
+const moneyInit=[
+  ['🍔 26점심 히키니쿠토코메(1인)','17000'],
+  ['🥩 26저녁 야키니쿠 하나비(1인)','33000'],
+  ['🍱 27점심 마코토(1인)','12000'],
+  ['🍶 27저녁 친푼칸푼(1인)','28000'],
+  ['🍲 28점심 마에다야 모츠나베(1인)','23000'],
+  ['🚇 교통(1일권+1회권, 1인)','13000'],
+  ['🛍️ 쇼핑/간식(개인차)','']
+];
+function addMoney(name,amt){
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td contenteditable="true">${name||'항목'}</td>
+    <td class="amt" contenteditable="true" oninput="calcMoney()">${amt||'0'}</td>`;
+  moneyBody.appendChild(tr);
+  calcMoney();
+}
+function calcMoney(){
+  let total=0;
+  moneyBody.querySelectorAll('tr').forEach(tr=>{
+    const v=parseInt(tr.children[1].textContent.replace(/[^0-9]/g,''))||0;
+    total+=v;
+  });
+  const ppl=parseInt(document.getElementById('peopleEdit').textContent.replace(/[^0-9]/g,''))||1;
+  document.getElementById('moneyTotal').textContent=total.toLocaleString();
+  document.getElementById('moneyPer').textContent=(total*ppl).toLocaleString();
+}
+document.getElementById('peopleEdit').addEventListener('input',calcMoney);
+moneyInit.forEach(([n,a])=>addMoney(n,a));
+</script>
+</body>
+</html>
